@@ -2,7 +2,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="🎓 Drajani tanlash"), KeyboardButton(text="� Bugun darsga")],
+        [KeyboardButton(text="🎓 Drajani tanlash"), KeyboardButton(text="📚 Kitoblar")],
         [KeyboardButton(text="📘 So'zlar"), KeyboardButton(text="📝 Test")],
         [KeyboardButton(text="📚 Grammar"), KeyboardButton(text="📊 Progress")],
         [KeyboardButton(text="🎥 Videolar"), KeyboardButton(text="🔥 Streakga")],

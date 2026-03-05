@@ -7,7 +7,7 @@ from aiogram.types import BotCommand
 
 from config import TOKEN
 from services.db import init_db
-from handlers import start, level, words, test, grammar, progress, leaderboard, daily, streak, videos
+from handlers import start, level, words, test, grammar, progress, leaderboard, daily, streak, videos, books
 
 # Logging setup
 logging.basicConfig(
@@ -46,6 +46,8 @@ streak.register(dp)
 logger.info("✓ streak handler")
 videos.register(dp)
 logger.info("✓ videos handler")
+books.register(dp)
+logger.info("✓ books handler")
 logger.info("Barcha handlers ro'yxatga olingan!")
 
 
