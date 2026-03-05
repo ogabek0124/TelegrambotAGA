@@ -150,7 +150,7 @@ async def show_grammar_question(callback: CallbackQuery, user_id: int):
             callback_data=f"grammar_ans:{i}:{correct_index}"
         )])
     
-    keyboard.append([InlineKeyboardButton(text="🛑 To'xtatish", callback_data="grammar_stop")])
+    keyboard.append([InlineKeyboardButton(text="🛑 To'xtatish", callback_data="grammar_confirm_quit")])
     
     await callback.message.edit_text(
         f"📝 <b>Savol {current + 1}/{len(questions)}</b>\n\n"
@@ -189,6 +189,30 @@ async def handle_grammar_answer(callback: CallbackQuery):
     state["current"] += 1
     
     await callback.answer(feedback, show_alert=True)
+    await show_grammar_question(callback, user_id)
+
+
+@router.callback_query(F.data == "grammar_confirm_quit")
+async def confirm_quit_grammar_test(callback: CallbackQuery):
+    """Testdan chiqish tasdiqini ko'rsatish"""
+    user_id = callback.from_user.id
+    
+    await callback.message.edit_text(
+        "❓ <b>Testdan chiqish</b>\n\n"
+        "Davom ettiraszmi yoki chiqib ketaszmi?",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Davom ettirish", callback_data="grammar_continue")],
+            [InlineKeyboardButton(text="❌ Chiqib ketish", callback_data="grammar_stop")]
+        ])
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "grammar_continue")
+async def continue_grammar_test(callback: CallbackQuery):
+    """Testni davom ettirish"""
+    user_id = callback.from_user.id
     await show_grammar_question(callback, user_id)
 
 

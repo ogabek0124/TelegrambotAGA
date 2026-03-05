@@ -50,15 +50,6 @@ async def handle_menu_navigation(callback: CallbackQuery):
             reply_markup=get_test_menu_inline()
         )
     
-    elif action == "grammar":
-        await callback.message.edit_text(
-            f"📖 Grammar bo'limi\n"
-            f"Darajangiz: <b>{user_level.capitalize()}</b>\n\n"
-            f"Tanlang:",
-            parse_mode="HTML",
-            reply_markup=get_grammar_menu_inline()
-        )
-    
     elif action == "books":
         await callback.message.edit_text(
             "📚 Kitoblar\n\n"
