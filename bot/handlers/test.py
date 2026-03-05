@@ -96,6 +96,7 @@ async def start_test(message: types.Message):
         "questions": questions,
         "current": 0,
         "correct": 0,
+        "answered": 0,
         "level": user_level,
         "waiting_answer": True
     }
@@ -192,6 +193,9 @@ async def handle_answer(message: types.Message):
     else:
         # Noto'g'ri bo'lsa, to'g'ri javobni ko'rsatish
         feedback = f"Noto'g'ri!\n\nTo'g'ri javob: {correct_answer}"
+
+    # Javob berilgan savollar soni (to'g'ri yoki noto'g'ri bo'lishidan qat'i nazar)
+    test_data["answered"] += 1
     
     test_data['waiting_answer'] = False
     
@@ -219,13 +223,13 @@ async def stop_test(message: types.Message):
     if user_id in ACTIVE_TESTS:
         test_data = ACTIVE_TESTS[user_id]
         correct = test_data["correct"]
-        current = test_data["current"]
-        
-        if current > 0:
-            percentage = (correct / current) * 100 if current > 0 else 0
+        answered = test_data.get("answered", 0)
+
+        if answered > 0:
+            percentage = (correct / answered) * 100
             await message.answer(
                 f"Test to'xtadi!\n\n"
-                f"To'g'ri javoblar: {correct}/{current}\n"
+                f"To'g'ri javoblar: {correct}/{answered}\n"
                 f"Foiz: {percentage:.1f}%",
                 reply_markup=main_menu
             )
