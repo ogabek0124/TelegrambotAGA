@@ -1,61 +1,47 @@
-from aiogram import Router, types
+from aiogram import Router, types, F
+from aiogram.types import CallbackQuery
 from keyboards.menus import main_menu
 from keyboards.level_menu import level_menu
+from keyboards.inline_menus import get_level_menu_inline, get_main_menu_inline
 from services.db import set_user_level, get_user_level
 from services.user_sync import update_user_progress
 
 router = Router()
 
 
-@router.message(lambda m: m.text and "tanlash" in m.text and ("Draja" in m.text or "Daraja" in m.text))
-async def choose_level(message: types.Message):
-    user_id = message.from_user.id
-    level = get_user_level(user_id)
-
-    if level:
-        await message.answer(
-            f"✅ Hozirgi darajangiz: {level.capitalize()}\n"
-            f"Boshqa drajani tanlaysizmi?",
-            reply_markup=level_menu
-        )
-    else:
-        await message.answer(
-            "📊 Darajangizni tanlang:\n\n"
-            "🟢 Beginner - Yangi boshlanuvchilar\n"
-            "🟡 Intermediate - O'rta darajasi\n"
-            "🔴 IELTS - Yuqori daraja",
-            reply_markup=level_menu
-        )
-
-
-@router.message(lambda m: m.text in ["🟢 Beginner", "🟡 Intermediate", "🔴 IELTS", "◀️ Ortga"])
-async def save_level(message: types.Message):
-    text = message.text
-
-    if text == "◀️ Ortga":
-        await message.answer("🏠 Asosiy menu", reply_markup=main_menu)
+@router.callback_query(F.data.startswith("level:"))
+async def handle_level_selection(callback: CallbackQuery):
+    """Inline button orqali daraja tanlash"""
+    level = callback.data.split(":")[1]
+    
+    if level not in ["beginner", "intermediate", "ielts"]:
+        await callback.answer("❌ Noto'g'ri daraja", show_alert=True)
         return
-
-    if "Beginner" in text:
-        level = "beginner"
-    elif "Intermediate" in text:
-        level = "intermediate"
-    elif "IELTS" in text:
-        level = "ielts"
-    else:
-        return
-
-    user_id = message.from_user.id
+    
+    user_id = callback.from_user.id
     set_user_level(user_id, level)
     
     # Django admin'ga sync qilish
     update_user_progress(telegram_id=user_id, level=level)
-
-    await message.answer(
-        f"🎉 Darajangiz saqlandi: {level.capitalize()}\n\n"
-        f"Ender siz {level.capitalize()} darajasiga mos testlarni yechishingiz mumkin! 🚀",
-        reply_markup=main_menu
+    
+    level_names = {
+        "beginner": "🟢 Beginner",
+        "intermediate": "🟡 Intermediate",
+        "ielts": "🔴 IELTS"
+    }
+    
+    await callback.message.edit_text(
+        f"🎉 Darajangiz saqlandi: <b>{level_names[level]}</b>\n\n"
+        f"Endi siz {level.capitalize()} darajasiga mos:\n"
+        f"• So'zlar bilan ishlashingiz\n"
+        f"• Testlar yechishingiz\n"
+        f"• Grammatika o'rganishingiz mumkin!\n\n"
+        f"🚀 Davom etamiz?",
+        reply_markup=get_main_menu_inline(),
+        parse_mode="HTML"
     )
+    
+    await callback.answer("✅ Daraja saqlandi!", show_alert=False)
 
 
 def register(dp):

@@ -1,6 +1,7 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 from keyboards.menus import main_menu
+from keyboards.inline_menus import get_main_menu_inline
 from services.db import get_user_level
 from services.user_sync import sync_telegram_user
 
@@ -21,15 +22,18 @@ async def start_handler(message: types.Message):
     if user_level:
         await message.answer(
             f"👋 Salom, {first_name}!\n\n"
-            f"📊 Sizning daraja: {user_level.capitalize()}\n"
-            f"Davom etaylik? 🚀",
-            reply_markup=main_menu
+            f"📊 Sizning darajangiz: <b>{user_level.capitalize()}</b>\n"
+            f"🚀 Nima qilishni xohlaysiz?",
+            reply_markup=get_main_menu_inline(),
+            parse_mode="HTML"
         )
     else:
         await message.answer(
-            f"👋 {first_name}, InglizchaOson botiga xush kelibsiz!\n\n"
-            f"🎓 Engilaylik, birinchi o'rinda darajangizni tanlang:",
-            reply_markup=main_menu
+            f"👋 <b>{first_name}</b>, InglizchaOson botiga xush kelibsiz!\n\n"
+            f"🎓 Birinchi o'rinda darajangizni tanlang:\n"
+            f"📚 So'ngra o'rganishni boshlang!",
+            reply_markup=get_main_menu_inline(),
+            parse_mode="HTML"
         )
 
 

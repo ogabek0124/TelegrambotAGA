@@ -7,7 +7,11 @@ from aiogram.types import BotCommand
 
 from config import TOKEN
 from services.db import init_db
-from handlers import start, level, words, test, grammar, progress, leaderboard, daily, streak, videos, books
+from handlers import (
+    start, level, words, test, grammar, progress, leaderboard, 
+    daily, streak, videos, books, callbacks, flashcard, word_categories,
+    grammar_test, test_history_handler, achievements_handler
+)
 
 # Logging setup
 logging.basicConfig(
@@ -26,6 +30,18 @@ logger.info("Bot va Dispatcher tayyorlandi")
 
 # Handlers registration
 logger.info("Handlers ro'yxatga olinmoqda...")
+callbacks.register(dp)
+logger.info("✓ callbacks handler")
+flashcard.register(dp)
+logger.info("✓ flashcard handler")
+word_categories.register(dp)
+logger.info("✓ word_categories handler")
+grammar_test.register(dp)
+logger.info("✓ grammar_test handler")
+test_history_handler.register(dp)
+logger.info("✓ test_history handler")
+achievements_handler.register(dp)
+logger.info("✓ achievements handler")
 start.register(dp)
 logger.info("✓ start handler")
 level.register(dp)
