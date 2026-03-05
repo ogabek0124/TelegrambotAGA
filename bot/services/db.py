@@ -29,7 +29,8 @@ def get_connection():
 
 def init_db():
     """Initialize database tables"""
-    with get_connection() as conn:
+    conn = get_connection()
+    try:
         c = conn.cursor()
         
         # Progress table - same structure for both databases
@@ -59,6 +60,13 @@ def init_db():
             pass
         
         conn.commit()
+        print("✅ Database tables created successfully")
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Database init error: {e}")
+        raise
+    finally:
+        conn.close()
 
 
 def get_progress(user_id: int):
