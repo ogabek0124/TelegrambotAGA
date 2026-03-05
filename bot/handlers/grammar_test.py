@@ -224,12 +224,7 @@ async def stop_grammar_test(callback: CallbackQuery):
     if user_id in GRAMMAR_TEST_STATE:
         del GRAMMAR_TEST_STATE[user_id]
     
-    await callback.message.edit_text(
-        "🛑 Test to'xtatildi",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
-        ])
-    )
+    await callback.message.edit_text("🛑 Test to'xtatildi")
     await callback.answer()
 
 
