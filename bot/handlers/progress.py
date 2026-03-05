@@ -1,5 +1,6 @@
-from aiogram import Router, types
-from keyboards.menus import main_menu
+from aiogram import Router, types, F
+from aiogram.types import CallbackQuery
+from keyboards.inline_menus import get_main_menu_inline
 from services.db import get_progress, get_connection, get_streak
 
 router = Router()
@@ -21,16 +22,17 @@ def get_badge(streak: int):
         return "🆕 Beginner"
 
 
-@router.message(lambda m: m.text and "Progress" in m.text)
-async def show_progress(message: types.Message):
-    user_id = message.from_user.id
+@router.callback_query(F.data == "menu:progress")
+async def show_progress(callback: CallbackQuery):
+    user_id = callback.from_user.id
     progress = get_progress(user_id)
 
     if not progress:
-        await message.answer(
+        await callback.message.edit_text(
             "Sizda hali progress yo'q. Testlarni yeching!",
-            reply_markup=main_menu
+            reply_markup=get_main_menu_inline()
         )
+        await callback.answer()
         return
 
     correct, total, streak, last_date = progress
@@ -48,18 +50,20 @@ async def show_progress(message: types.Message):
     # Badge
     badge = get_badge(streak)
 
-    await message.answer(
-        f"SIZNING STATISTIKA\n\n"
-        f"Test Natijalari:\n"
+    await callback.message.edit_text(
+        f"📊 <b>SIZNING STATISTIKA</b>\n\n"
+        f"<b>Test Natijalari:</b>\n"
         f"✅ To'g'ri: {correct}/{total}\n"
         f"📈 Foiz: {percentage:.1f}%\n\n"
-        f"Motivatsiya:\n"
+        f"<b>Motivatsiya:</b>\n"
         f"🔥 Streak: {streak} kun\n"
         f"{badge}\n\n"
-        f"Darajasi: {level}\n"
-        f"Oxirgi sana: {last_date}",
-        reply_markup=main_menu
+        f"<b>Darajasi:</b> {level}\n"
+        f"<b>Oxirgi sana:</b> {last_date}",
+        parse_mode="HTML",
+        reply_markup=get_main_menu_inline()
     )
+    await callback.answer()
 
 
 def register(dp):

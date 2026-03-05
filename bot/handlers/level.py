@@ -1,7 +1,5 @@
 from aiogram import Router, types, F
 from aiogram.types import CallbackQuery
-from keyboards.menus import main_menu
-from keyboards.level_menu import level_menu
 from keyboards.inline_menus import get_level_menu_inline, get_main_menu_inline
 from services.db import set_user_level, get_user_level
 from services.user_sync import update_user_progress

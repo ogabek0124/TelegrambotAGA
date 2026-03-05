@@ -1,6 +1,5 @@
 from aiogram import Router, types
 from aiogram.filters import Command
-from keyboards.menus import main_menu
 from keyboards.inline_menus import get_main_menu_inline
 from services.db import get_user_level
 from services.user_sync import sync_telegram_user

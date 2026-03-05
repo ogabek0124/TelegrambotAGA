@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
-from aiogram import Router, types
-from keyboards.grammar_menu import grammar_menu
-from keyboards.menus import main_menu
+from aiogram import Router, types, F
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from keyboards.inline_menus import get_main_menu_inline
 from services.db import get_user_level
 
 router = Router()
@@ -28,36 +28,39 @@ GRAMMAR_MAP = {
 }
 
 
-@router.message(lambda m: m.text and "Grammar" in m.text)
-async def show_grammar_menu(message: types.Message):
-    user_id = message.from_user.id
+@router.callback_query(F.data == "menu:grammar")
+async def show_grammar_menu(callback: CallbackQuery):
+    user_id = callback.from_user.id
     user_level = get_user_level(user_id) or "beginner"
     
-    await message.answer(
-        f"📚 Grammar bo'limi\n"
-        f"Sizning daraja: {user_level.capitalize()}\n"
-        f"Kerakli mavzuni tanlang:",
-        reply_markup=grammar_menu
-    )
-
-
-@router.message(lambda m: m.text in GRAMMAR_MAP.keys() or m.text == "◀️ Ortga")
-async def show_grammar(message: types.Message):
-    text = message.text
+    # Grammar inline keyboard
+    grammar_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="1️⃣ Present Simple", callback_data="grammar:present_simple")],
+        [InlineKeyboardButton(text="2️⃣ Past Simple", callback_data="grammar:past_simple")],
+        [InlineKeyboardButton(text="3️⃣ Present Continuous", callback_data="grammar:present_continuous")],
+        [InlineKeyboardButton(text="4️⃣ Will (Future)", callback_data="grammar:will_future")],
+        [InlineKeyboardButton(text="5️⃣ Present Perfect", callback_data="grammar:present_perfect")],
+        [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+    ])
     
-    if text == "◀️ Ortga":
-        await message.answer("🏠 Asosiy menu", reply_markup=main_menu)
-        return
+    await callback.message.edit_text(
+        f"📚 <b>Grammar bo'limi</b>\n\n"
+        f"Sizning daraja: <b>{user_level.capitalize()}</b>\n\n"
+        f"Kerakli mavzuni tanlang:",
+        parse_mode="HTML",
+        reply_markup=grammar_keyboard
+    )
+    await callback.answer()
 
-    # Get grammar ID from mapping
-    grammar_id = GRAMMAR_MAP.get(text)
-    if not grammar_id:
-        return
+
+@router.callback_query(F.data.startswith("grammar:"))
+async def show_grammar(callback: CallbackQuery):
+    grammar_id = callback.data.split(":")[1]
 
     # Find grammar
     g = next((x for x in GRAMMAR if x["id"] == grammar_id), None)
     if not g:
-        await message.answer("❌ Mavzu topilmadi")
+        await callback.answer("❌ Mavzu topilmadi", show_alert=True)
         return
 
     # Format response with new structure
@@ -91,12 +94,19 @@ async def show_grammar(message: types.Message):
             if 'note' in mistake:
                 response += f"   💬 {mistake['note']}\n"
             response += "\n"
+    
+    # Back button
+    back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Grammar menyuga", callback_data="menu:grammar")],
+        [InlineKeyboardButton(text="🏠 Asosiy menu", callback_data="back:main")]
+    ])
 
-    await message.answer(
+    await callback.message.edit_text(
         response,
-        reply_markup=grammar_menu,
+        reply_markup=back_keyboard,
         parse_mode="HTML"
     )
+    await callback.answer()
 
 
 def register(dp):

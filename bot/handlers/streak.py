@@ -1,5 +1,6 @@
-from aiogram import Router, types
-from keyboards.menus import main_menu
+from aiogram import Router, types, F
+from aiogram.types import CallbackQuery
+from keyboards.inline_menus import get_main_menu_inline
 from services.db import get_connection, get_streak
 
 router = Router()
@@ -21,20 +22,22 @@ def get_badge(streak: int):
         return "🆕 Beginner"
 
 
-@router.message(lambda m: m.text and "Streakga" in m.text)
-async def show_streak(message: types.Message):
-    user_id = message.from_user.id
+@router.callback_query(F.data == "menu:streak")
+async def show_streak(callback: CallbackQuery):
+    user_id = callback.from_user.id
     
     streak = get_streak(user_id)
     badge = get_badge(streak)
     
-    await message.answer(
-        f"YOUR STREAK\n\n"
-        f"Streak: {streak} kun\n"
+    await callback.message.edit_text(
+        f"🔥 <b>YOUR STREAK</b>\n\n"
+        f"<b>Streak:</b> {streak} kun\n"
         f"{badge}\n\n"
         f"Har kun darsga kilib streakingizni oshiring!",
-        reply_markup=main_menu
+        parse_mode="HTML",
+        reply_markup=get_main_menu_inline()
     )
+    await callback.answer()
 
 
 def register(dp):
