@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import sys
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
@@ -57,8 +58,36 @@ async def set_default_commands(bot: Bot):
     await bot.set_my_commands(commands)
 
 
+async def start_healthcheck_server():
+    """Render Web Service uchun oddiy HTTP health endpoint."""
+    async def handle_client(reader, writer):
+        try:
+            await reader.read(1024)
+            body = b"OK"
+            response = (
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: text/plain\r\n"
+                b"Content-Length: 2\r\n"
+                b"Connection: close\r\n\r\n" + body
+            )
+            writer.write(response)
+            await writer.drain()
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    port = int(os.getenv("PORT", "10000"))
+    server = await asyncio.start_server(handle_client, host="0.0.0.0", port=port)
+    logger.info(f"Healthcheck server ishga tushdi: 0.0.0.0:{port}")
+    return server
+
+
 async def main():
+    health_server = None
     try:
+        # Render Web Service timeout bo'lmasligi uchun port ochamiz.
+        health_server = await start_healthcheck_server()
+
         # DB init (sync, lekin async context da)
         print("[*] Database tayyorlanmoqda...")
         init_db()
@@ -74,11 +103,15 @@ async def main():
         print("="*50)
         print("🔄 Telegram'dan xabarlar kutilmoqda...")
         print("💬 Test qilish uchun: @inglizchaoson_bot ga /start yozing\n")
-        
+
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     except Exception as e:
         print(f"\n❌ XATO YUZAGA KELDI: {e}")
         logger.exception("Bot xatosi")
+    finally:
+        if health_server is not None:
+            health_server.close()
+            await health_server.wait_closed()
 
 
 if __name__ == "__main__":
