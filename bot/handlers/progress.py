@@ -1,6 +1,5 @@
 from aiogram import Router, types, F
-from aiogram.types import CallbackQuery
-from keyboards.inline_menus import get_main_menu_inline
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from services.db import get_progress, get_connection, get_streak
 
 router = Router()
@@ -26,11 +25,15 @@ def get_badge(streak: int):
 async def show_progress(callback: CallbackQuery):
     user_id = callback.from_user.id
     progress = get_progress(user_id)
+    
+    back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+    ])
 
     if not progress:
         await callback.message.edit_text(
             "Sizda hali progress yo'q. Testlarni yeching!",
-            reply_markup=get_main_menu_inline()
+            reply_markup=back_keyboard
         )
         await callback.answer()
         return
@@ -50,6 +53,11 @@ async def show_progress(callback: CallbackQuery):
     # Badge
     badge = get_badge(streak)
 
+    from keyboards.inline_menus import InlineKeyboardMarkup, InlineKeyboardButton
+    back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+    ])
+    
     await callback.message.edit_text(
         f"📊 <b>SIZNING STATISTIKA</b>\n\n"
         f"<b>Test Natijalari:</b>\n"
@@ -61,7 +69,7 @@ async def show_progress(callback: CallbackQuery):
         f"<b>Darajasi:</b> {level}\n"
         f"<b>Oxirgi sana:</b> {last_date}",
         parse_mode="HTML",
-        reply_markup=get_main_menu_inline()
+        reply_markup=back_keyboard
     )
     await callback.answer()
 

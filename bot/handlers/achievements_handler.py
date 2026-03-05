@@ -50,10 +50,14 @@ async def show_achievements(callback: CallbackQuery):
                 text += f"   {ach_data['description']}\n"
                 text += f"   💰 {ach_data['points']} ochko\n\n"
     
+    back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+    ])
+    
     await callback.message.edit_text(
         text,
         parse_mode="HTML",
-        reply_markup=get_main_menu_inline()
+        reply_markup=back_keyboard
     )
     await callback.answer()
 

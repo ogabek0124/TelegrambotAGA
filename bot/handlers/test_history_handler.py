@@ -2,9 +2,8 @@
 Test tarixi - o'tgan testlar natijalari
 """
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from services.test_history import get_test_history, get_test_stats
-from keyboards.inline_menus import get_main_menu_inline
 from datetime import datetime
 
 router = Router()
@@ -18,13 +17,17 @@ async def show_test_history(callback: CallbackQuery):
     # Statistika
     stats = get_test_stats(user_id)
     
+    back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+    ])
+    
     if not stats or stats[0] == 0:
         await callback.message.edit_text(
             "📊 <b>Test Tarixi</b>\n\n"
             "Siz hali test yechmagansiz.\n"
             "Birinchi testni yeching! 💪",
             parse_mode="HTML",
-            reply_markup=get_main_menu_inline()
+            reply_markup=back_keyboard
         )
         await callback.answer()
         return
@@ -74,7 +77,7 @@ async def show_test_history(callback: CallbackQuery):
     await callback.message.edit_text(
         text,
         parse_mode="HTML",
-        reply_markup=get_main_menu_inline()
+        reply_markup=back_keyboard
     )
     await callback.answer()
 

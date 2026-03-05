@@ -9,7 +9,6 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from services.db import get_user_level
 from services.test_history import save_test_result
-from keyboards.inline_menus import get_main_menu_inline
 
 router = Router()
 
@@ -131,7 +130,9 @@ async def show_grammar_question(callback: CallbackQuery, user_id: int):
             f"⏱ Vaqt: {time_spent // 60}:{time_spent % 60:02d}\n\n"
             f"{'🎉 A+oyib!' if percentage >= 80 else '💪 Davom eting!'}",
             parse_mode="HTML",
-            reply_markup=get_main_menu_inline()
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+            ])
         )
         
         del GRAMMAR_TEST_STATE[user_id]
@@ -201,7 +202,9 @@ async def stop_grammar_test(callback: CallbackQuery):
     
     await callback.message.edit_text(
         "🛑 Test to'xtatildi",
-        reply_markup=get_main_menu_inline()
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+        ])
     )
     await callback.answer()
 

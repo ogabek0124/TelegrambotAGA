@@ -29,13 +29,18 @@ async def show_streak(callback: CallbackQuery):
     streak = get_streak(user_id)
     badge = get_badge(streak)
     
+    from keyboards.inline_menus import InlineKeyboardMarkup, InlineKeyboardButton
+    back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+    ])
+    
     await callback.message.edit_text(
         f"🔥 <b>YOUR STREAK</b>\n\n"
         f"<b>Streak:</b> {streak} kun\n"
         f"{badge}\n\n"
         f"Har kun darsga kilib streakingizni oshiring!",
         parse_mode="HTML",
-        reply_markup=get_main_menu_inline()
+        reply_markup=back_keyboard
     )
     await callback.answer()
 

@@ -2,7 +2,7 @@
 Callback query handler - inline button'lar uchun
 """
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from keyboards.inline_menus import (
     get_main_menu_inline,
     get_level_menu_inline,
@@ -70,11 +70,15 @@ async def handle_menu_navigation(callback: CallbackQuery):
         user_id = callback.from_user.id
         progress = get_progress(user_id)
         
+        back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+        ])
+        
         if not progress:
             await callback.message.edit_text(
                 "📊 Sizda hali progress yo'q.\n\n"
                 "Testlarni yechib boshlang! 🚀",
-                reply_markup=get_main_menu_inline()
+                reply_markup=back_keyboard
             )
         else:
             correct, total, streak, last_date = progress
@@ -87,12 +91,16 @@ async def handle_menu_navigation(callback: CallbackQuery):
                 f"🔥 Streak: {streak} kun\n"
                 f"📅 Oxirgi faollik: {last_date}",
                 parse_mode="HTML",
-                reply_markup=get_main_menu_inline()
+                reply_markup=back_keyboard
             )
     
     elif action == "leaderboard":
         from services.db import get_leaderboard
         leaders = get_leaderboard(limit=10)
+        
+        back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+        ])
         
         if not leaders:
             text = "🏆 Leaderboard bo'sh\n\n Birinchi bo'ling!"
@@ -105,12 +113,16 @@ async def handle_menu_navigation(callback: CallbackQuery):
         await callback.message.edit_text(
             text,
             parse_mode="HTML",
-            reply_markup=get_main_menu_inline()
+            reply_markup=back_keyboard
         )
     
     elif action == "streak":
         user_id = callback.from_user.id
         streak = get_streak(user_id)
+        
+        back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+        ])
         
         if streak >= 7:
             badge = "🔥 Hot Streak!"
@@ -125,15 +137,18 @@ async def handle_menu_navigation(callback: CallbackQuery):
             f"{badge}\n\n"
             f"Har kuni test yechib, streak'ni oshiring! 💪",
             parse_mode="HTML",
-            reply_markup=get_main_menu_inline()
+            reply_markup=back_keyboard
         )
     
     elif action == "videos":
+        back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Ortga", callback_data="back:main")]
+        ])
         await callback.message.edit_text(
             "🎥 <b>Videolar bo'limi</b>\n\n"
             "Tez orada qo'shiladi...",
             parse_mode="HTML",
-            reply_markup=get_main_menu_inline()
+            reply_markup=back_keyboard
         )
     
     elif action == "achievements":
