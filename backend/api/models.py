@@ -55,3 +55,34 @@ class TelegramUser(models.Model):
 
     def __str__(self):
         return f"User {self.telegram_id} - {self.username or self.first_name}"
+
+
+class Video(models.Model):
+    LEVEL_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('ielts', 'IELTS'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='beginner')
+    
+    # Video source (YouTube URL, file upload, etc.)
+    youtube_url = models.URLField(null=True, blank=True)
+    thumbnail = models.ImageField(upload_to='thumbnails/', null=True, blank=True)
+    
+    # Duration
+    duration_seconds = models.IntegerField(null=True, blank=True)
+    
+    # Metadata
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    views = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.title} ({self.level})"
+    
+    class Meta:
+        ordering = ['-created_at']

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Word, Grammar, TelegramUser, Category
+from .models import Word, Grammar, TelegramUser, Category, Video
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,3 +22,11 @@ class TelegramUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = TelegramUser
         fields = '__all__'
+
+class VideoSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    
+    class Meta:
+        model = Video
+        fields = ['id', 'title', 'description', 'level', 'youtube_url', 'thumbnail', 
+                  'duration_seconds', 'category', 'category_name', 'views', 'created_at']
