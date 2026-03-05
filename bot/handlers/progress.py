@@ -21,7 +21,7 @@ def get_badge(streak: int):
         return "🆕 Beginner"
 
 
-@router.message(lambda m: m.text == "📊 Progress")
+@router.message(lambda m: m.text and "Progress" in m.text)
 async def show_progress(message: types.Message):
     user_id = message.from_user.id
     progress = get_progress(user_id)

@@ -63,7 +63,7 @@ def create_options_keyboard(options):
     )
 
 
-@router.message(lambda m: m.text == "📝 Test")
+@router.message(lambda m: m.text and "Test" in m.text)
 async def start_test(message: types.Message):
     user_id = message.from_user.id
 
@@ -202,7 +202,7 @@ async def handle_answer(message: types.Message):
     await message.answer(feedback, reply_markup=create_continue_keyboard())
 
 
-@router.message(lambda m: m.text == "Keyingi savol")
+@router.message(lambda m: m.text and "Keyingi savol" in m.text)
 async def next_question(message: types.Message):
     user_id = message.from_user.id
 
@@ -216,7 +216,7 @@ async def next_question(message: types.Message):
     await show_question(message, user_id)
 
 
-@router.message(lambda m: m.text == "Testni to'xtatish")
+@router.message(lambda m: m.text and "Testni to" in m.text)
 async def stop_test(message: types.Message):
     user_id = message.from_user.id
 

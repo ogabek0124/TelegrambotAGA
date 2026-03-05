@@ -5,7 +5,7 @@ from services.db import get_leaderboard
 router = Router()
 
 
-@router.message(lambda m: m.text == "🏆 Leaderboard")
+@router.message(lambda m: m.text and "Leaderboard" in m.text)
 async def show_leaderboard(message: types.Message):
     leaders = get_leaderboard(limit=10)
 

@@ -17,7 +17,7 @@ with open(DATA_DIR / "words.json", "r", encoding="utf-8") as f:
 WORDS_STATE = {}
 
 
-@router.message(lambda m: m.text == "📘 So'zlar")
+@router.message(lambda m: m.text and ("So'zlar" in m.text or "So’zlar" in m.text))
 async def show_words(message: types.Message):
     """So'zlarni ko'rsatish"""
     user_id = message.from_user.id
@@ -116,7 +116,7 @@ async def prev_page(message: types.Message):
         await display_words_page(message, user_id)
 
 
-@router.message(lambda m: m.text == "🏠 Menu")
+@router.message(lambda m: m.text and "Menu" in m.text)
 async def back_to_menu(message: types.Message):
     """Asosiy menyuya qaytish"""
     user_id = message.from_user.id

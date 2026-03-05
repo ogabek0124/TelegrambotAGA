@@ -6,7 +6,7 @@ from services.db import set_user_level, get_user_level
 router = Router()
 
 
-@router.message(lambda m: m.text == "🎓 Drajani tanlash")
+@router.message(lambda m: m.text and "tanlash" in m.text and ("Draja" in m.text or "Daraja" in m.text))
 async def choose_level(message: types.Message):
     user_id = message.from_user.id
     level = get_user_level(user_id)

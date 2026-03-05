@@ -28,7 +28,7 @@ GRAMMAR_MAP = {
 }
 
 
-@router.message(lambda m: m.text == "📚 Grammar")
+@router.message(lambda m: m.text and "Grammar" in m.text)
 async def show_grammar_menu(message: types.Message):
     user_id = message.from_user.id
     user_level = get_user_level(user_id) or "beginner"
