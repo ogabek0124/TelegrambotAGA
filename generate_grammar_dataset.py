@@ -1,0 +1,727 @@
+#!/usr/bin/env python3
+"""
+To'liq va tushunarli Grammar dataset yaratish
+Har bir qoidaga 3-5 misollar + tarjimalar
+"""
+import json
+from pathlib import Path
+
+enhanced_grammar = [
+    # BEGINNER LEVEL
+    {
+        "id": "present_simple",
+        "title": "Present Simple - Hozirgi oddiy zamon",
+        "level": "beginner",
+        "rule": "Present Simple hozirgi zamonda odatiy, takrorlanuvchi harakatlar va faktlarni ifodalash uchun ishlatiladi.",
+        "structure": "Subject + Verb (base form) + Object",
+        "usage": [
+            "Odatiy harakatlar (every day, always, usually)",
+            "Umumiy faktlar va haqiqatlar",
+            "Jadval va tartib"
+        ],
+        "examples": [
+            {
+                "english": "I work every day.",
+                "uzbek": "Men har kuni ishlayman.",
+                "note": "Odatiy harakat"
+            },
+            {
+                "english": "The sun rises in the east.",
+                "uzbek": "Quyosh sharqdan chiqadi.",
+                "note": "Umumiy fakt"
+            },
+            {
+                "english": "She teaches English.",
+                "uzbek": "U ingliz tilini o'rgatadi.",
+                "note": "3-shaxs uchun -s/-es qo'shiladi"
+            },
+            {
+                "english": "They don't eat meat.",
+                "uzbek": "Ular go'sht yemaydilar.",
+                "note": "Inkor shakli: don't/doesn't + base verb"
+            },
+            {
+                "english": "Do you speak Russian?",
+                "uzbek": "Siz rus tilida gapira olasizmi?",
+                "note": "Savol: Do/Does + subject + verb"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "He play football", "correct": "He plays football"},
+            {"wrong": "She don't like coffee", "correct": "She doesn't like coffee"},
+            {"wrong": "Do she work here?", "correct": "Does she work here?"}
+        ]
+    },
+    {
+        "id": "present_continuous",
+        "title": "Present Continuous - Hozirgi davomli zamon",
+        "level": "beginner",
+        "rule": "Hozir sodir bo'layotgan yoki shu davr ichida davom etayotgan harakatni ifodalaydi.",
+        "structure": "Subject + am/is/are + Verb-ing",
+        "usage": [
+            "Ayni damda sodir bo'layotgan harakat",
+            "Vaqtincha holatlar",
+            "Yaqin kelajak reja"
+        ],
+        "examples": [
+            {
+                "english": "I am reading a book now.",
+                "uzbek": "Men hozir kitob o'qiyapman.",
+                "note": "Hozir sodir bo'layotgan"
+            },
+            {
+                "english": "She is living in Tashkent this year.",
+                "uzbek": "U bu yil Toshkentda yashayapti.",
+                "note": "Vaqtincha holat"
+            },
+            {
+                "english": "They are coming tomorrow.",
+                "uzbek": "Ular ertaga kelishadi.",
+                "note": "Rejalashtirilgan kelajak"
+            },
+            {
+                "english": "We are not working today.",
+                "uzbek": "Biz bugun ishlamayapmiz.",
+                "note": "Inkor: am/is/are + not + verb-ing"
+            },
+            {
+                "english": "Are you listening to me?",
+                "uzbek": "Meni tinglayapsizmi?",
+                "note": "Savol: Am/Is/Are + subject + verb-ing"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "I am knowing the answer", "correct": "I know the answer", "note": "State verbs (know, like, want) odatda Continuous'da ishlatilmaydi"},
+            {"wrong": "She is cook dinner", "correct": "She is cooking dinner"},
+            {"wrong": "They working hard", "correct": "They are working hard"}
+        ]
+    },
+    {
+        "id": "past_simple",
+        "title": "Past Simple - O'tmish oddiy zamon",
+        "level": "beginner",
+        "rule": "O'tmishda tugallangan harakatlarni ifodalash uchun ishlatiladi.",
+        "structure": "Subject + Verb (past form) / Verb-ed",
+        "usage": [
+            "O'tmishda bo'lib o'tgan aniq harakat",
+            "Ketma-ket bo'lgan voqealar",
+            "O'tmishdagi odatlar"
+        ],
+        "examples": [
+            {
+                "english": "I visited my grandmother yesterday.",
+                "uzbek": "Men kecha buvimnikiga bordim.",
+                "note": "O'tmishda aniq vaqt"
+            },
+            {
+                "english": "She worked in a bank for 5 years.",
+                "uzbek": "U 5 yil bank da ishladi.",
+                "note": "Tugagan davr"
+            },
+            {
+                "english": "We went to the cinema last week.",
+                "uzbek": "Biz o'tgan hafta kinoga borgandik.",
+                "note": "Irregular verb: go → went"
+            },
+            {
+                "english": "He didn't come to the party.",
+                "uzbek": "U ziyofatga kelmadi.",
+                "note": "Inkor: didn't + base verb"
+            },
+            {
+                "english": "Did you see that movie?",
+                "uzbek": "O'sha filmni ko'rdingizmi?",
+                "note": "Savol: Did + subject + base verb"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "I goed to school", "correct": "I went to school"},
+            {"wrong": "She didn't went", "correct": "She didn't go"},
+            {"wrong": "Did he came?", "correct": "Did he come?"}
+        ]
+    },
+    {
+        "id": "future_simple",
+        "title": "Future Simple (Will) - Kelajak oddiy zamon",
+        "level": "beginner",
+        "rule": "Kelajakdagi harakatlar, qarorlar va bashoratlar uchun ishlatiladi.",
+        "structure": "Subject + will + Verb (base form)",
+        "usage": [
+            "Oniy qaror",
+            "Va'da, taklif, tahdid",
+            "Bashorat (think, hope, expect bilan)"
+        ],
+        "examples": [
+            {
+                "english": "I will help you with your homework.",
+                "uzbek": "Men sizga uy vazifangizda yordam beraman.",
+                "note": "Va'da"
+            },
+            {
+                "english": "It will rain tomorrow.",
+                "uzbek": "Ertaga yomg'ir yog'adi.",
+                "note": "Bashorat"
+            },
+            {
+                "english": "She won't be late.",
+                "uzbek": "U kechikib qolmaydi.",
+                "note": "Inkor: will not = won't"
+            },
+            {
+                "english": "Will you marry me?",
+                "uzbek": "Menga turmushga chiqasizmi?",
+                "note": "Taklif"
+            },
+            {
+                "english": "I think they will win.",
+                "uzbek": "Menimcha ular g'alaba qiladi.",
+                "note": "Bashorat (think bilan)"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "He will comes", "correct": "He will come"},
+            {"wrong": "I will to go", "correct": "I will go"},
+            {"wrong": "Will she helps us?", "correct": "Will she help us?"}
+        ]
+    },
+    {
+        "id": "articles",
+        "title": "Articles (A/An/The) - Maqolalar",
+        "level": "beginner",
+        "rule": "A/An - noaniq artikel (birinchi marta), The - aniq artikel (ma'lum narsa).",
+        "structure": "a + consonant, an + vowel, the + aniq narsa",
+        "usage": [
+            "A/An: umumiy/noaniq narsa",
+            "The: aniq/malum narsa",
+            "Artikelsiz: umumiy ma'no"
+        ],
+        "examples": [
+            {
+                "english": "I have a car. The car is red.",
+                "uzbek": "Mening mashinam bor. Mashina qizil rangda.",
+                "note": "Birinchi marta 'a', keyin 'the'"
+            },
+            {
+                "english": "She is an engineer.",
+                "uzbek": "U muhandis.",
+                "note": "'an' unli tovush oldidan"
+            },
+            {
+                "english": "The sun is hot.",
+                "uzbek": "Quyosh issiq.",
+                "note": "'the' yagona narsalar bilan"
+            },
+            {
+                "english": "I love music.",
+                "uzbek": "Men musiqani yaxshi ko'raman.",
+                "note": "Umumiy ma'no - artikelsiz"
+            },
+            {
+                "english": "An apple a day keeps the doctor away.",
+                "uzbek": "Kuniga bir olma shifokordan uzoqlashtiradi.",
+                "note": "Maqol"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "I need a apple", "correct": "I need an apple"},
+            {"wrong": "The love is beautiful", "correct": "Love is beautiful"},
+            {"wrong": "Sun is hot", "correct": "The sun is hot"}
+        ]
+    },
+    
+    # INTERMEDIATE LEVEL
+    {
+        "id": "present_perfect",
+        "title": "Present Perfect - Hozirgi tugallangan zamon",
+        "level": "intermediate",
+        "rule": "O'tmishda boshlanib hozirga qadar bog'liq bo'lgan yoki yaqinda tugagan harakatlar.",
+        "structure": "Subject + have/has + Past Participle (V3)",
+        "usage": [
+            "Natijasi hozir muhim bo'lgan voqea",
+            "Hayot tajribasi (ever, never)",
+            "Hali tugamagan davr (today, this week)",
+            "For/Since bilan davomiy holat"
+        ],
+        "examples": [
+            {
+                "english": "I have finished my homework.",
+                "uzbek": "Men uy vazifamni tugatdim.",
+                "note": "Natija hozir muhim"
+            },
+            {
+                "english": "She has lived here for 10 years.",
+                "uzbek": "U bu yerda 10 yil yashayapti.",
+                "note": "'for' - davomiylik"
+            },
+            {
+                "english": "Have you ever been to London?",
+                "uzbek": "Londonda bo'lganmisiz?",
+                "note": "'ever' - hayot tajribasi"
+            },
+            {
+                "english": "They have not seen this movie yet.",
+                "uzbek": "Ular bu filmni hali ko'rmaganlar.",
+                "note": "'yet' - kutilgan lekin bo'lmagan"
+            },
+            {
+                "english": "I have just arrived.",
+                "uzbek": "Men hozirgina keldim.",
+                "note": "'just' - juda yaqinda"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "I have seen him yesterday", "correct": "I saw him yesterday", "note": "Aniq o'tmish vaqt bilan Past Simple"},
+            {"wrong": "She has went", "correct": "She has gone"},
+            {"wrong": "Have you finish?", "correct": "Have you finished?"}
+        ]
+    },
+    {
+        "id": "past_continuous",
+        "title": "Past Continuous - O'tmish davomli zamon",
+        "level": "intermediate",
+        "rule": "O'tmishda ma'lum vaqtda davom etayotgan harakatni ifodalaydi.",
+        "structure": "Subject + was/were + Verb-ing",
+        "usage": [
+            "O'tmishda aniq vaqtda davom etgan harakat",
+            "Ikki parallel harakat",
+            "Boshqa harakat yuzaga kelganda fonlikdagi harakat"
+        ],
+        "examples": [
+            {
+                "english": "I was reading when she called.",
+                "uzbek": "U qo'ng'iroq qilganida men kitob o'qiyotgan edim.",
+                "note": "Fonlikdagi harakat"
+            },
+            {
+                "english": "They were playing football at 5 PM.",
+                "uzbek": "Soat 5da ular futbol o'ynayotgan edi.",
+                "note": "Aniq vaqtda davom etgan"
+            },
+            {
+                "english": "While I was cooking, he was watching TV.",
+                "uzbek": "Men ovqat pishirayotganimda, u televizor ko'rayotgan edi.",
+                "note": "Parallel harakatlar"
+            },
+            {
+                "english": "It was raining all day yesterday.",
+                "uzbek": "Kecha kun bo'yi yomg'ir yog'ayotgan edi.",
+                "note": "Davomli holat"
+            },
+            {
+                "english": "Were you sleeping when I arrived?",
+                "uzbek": "Men kelganimda uxlab yotgan edingizmi?",
+                "note": "Savol shakli"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "I was work", "correct": "I was working"},
+            {"wrong": "She were reading", "correct": "She was reading"},
+            {"wrong": "When I came, he watched TV", "correct": "When I came, he was watching TV"}
+        ]
+    },
+    {
+        "id": "modal_verbs",
+        "title": "Modal Verbs - Modal fe'llar",
+        "level": "intermediate",
+        "rule": "Can, could, may, might, must, should, would - imkoniyat, ruxsat, keraklilik, maslahat ifodalash.",
+        "structure": "Subject + Modal + Verb (base form)",
+        "usage": [
+            "Can/Could - imkoniyat, qobiliyat",
+            "May/Might - ehtimol, ruxsat",
+            "Must/Have to - majburiyat",
+            "Should - maslahat"
+        ],
+        "examples": [
+            {
+                "english": "I can speak three languages.",
+                "uzbek": "Men uch tilda gapira olaman.",
+                "note": "Can - qobiliyat"
+            },
+            {
+                "english": "You should see a doctor.",
+                "uzbek": "Siz shifokorga ko'rinishingiz kerak.",
+                "note": "Should - maslahat"
+            },
+            {
+                "english": "It might rain tomorrow.",
+                "uzbek": "Ertaga yomg'ir yog'ishi mumkin.",
+                "note": "Might - ehtimol"
+            },
+            {
+                "english": "You must wear a seatbelt.",
+                "uzbek": "Siz xavfsizlik kamarini taqishingiz shart.",
+                "note": "Must - majburiyat"
+            },
+            {
+                "english": "Could you help me, please?",
+                "uzbek": "Menga yordam bera olasizmi, iltimos?",
+                "note": "Could - muloyim iltimos"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "I can to swim", "correct": "I can swim"},
+            {"wrong": "She musts go", "correct": "She must go"},
+            {"wrong": "You should to study", "correct": "You should study"}
+        ]
+    },
+    {
+        "id": "conditional_first",
+        "title": "First Conditional - Birinchi shartli gap",
+        "level": "intermediate",
+        "rule": "Haqiqiy yoki ehtimoli yuqori bo'lgan kelajak sharti va natijasi.",
+        "structure": "If + Present Simple, will + base verb",
+        "usage": [
+            "Ehtimoli yuqori shart",
+            "Kelajak rejalari va bashoratlar",
+            "Ogohlantirish va tahdid"
+        ],
+        "examples": [
+            {
+                "english": "If it rains, I will stay home.",
+                "uzbek": "Agar yomg'ir yog'sa, men uyda qolaman.",
+                "note": "Ehtimoli yuqori"
+            },
+            {
+                "english": "If you study hard, you will pass the exam.",
+                "uzbek": "Agar yaxshi o'qisang, imtihondan o'tasan.",
+                "note": "Shart va natija"
+            },
+            {
+                "english": "I will call you if I have time.",
+                "uzbek": "Vaqtim bo'lsa, sizga qo'ng'iroq qilaman.",
+                "note": "'If' gapning oxirida ham bo'lishi mumkin"
+            },
+            {
+                "english": "If she doesn't hurry, she will miss the train.",
+                "uzbek": "Agar u shoshilmasa, poyezddan qoladi.",
+                "note": "Inkor shakli"
+            },
+            {
+                "english": "What will you do if you win the lottery?",
+                "uzbek": "Agar lotereyada yutib olsangiz, nima qilasiz?",
+                "note": "Savol shakli"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "If it will rain, I stay home", "correct": "If it rains, I will stay home"},
+            {"wrong": "If you will come, I am happy", "correct": "If you come, I will be happy"}
+        ]
+    },
+    {
+        "id": "passive_voice",
+        "title": "Passive Voice - Noaniq nisbat",
+        "level": "intermediate",
+        "rule": "Harakat bajarilishiga e'tibor qaratiladi, bajaruvchiga emas.",
+        "structure": "Subject + be + Past Participle (V3) + (by agent)",
+        "usage": [
+            "Baj aruvchi noma'lum",
+            "Bajaruvchi muhim emas",
+            "Rasmiy matnlar",
+            "Harakat natijasiiga e'tibor"
+        ],
+        "examples": [
+            {
+                "english": "The book was written by Tolstoy.",
+                "uzbek": "Kitob Tolstoy tomonidan yozilgan.",
+                "note": "Muallif ma'lum"
+            },
+            {
+                "english": "English is spoken all over the world.",
+                "uzbek": "Ingliz tili butun dunyoda gapililadi.",
+                "note": "Bajaruvchi muhim emas"
+            },
+            {
+                "english": "The house is being built now.",
+                "uzbek": "Uy hozir quriliyapti.",
+                "note": "Present Continuous Passive"
+            },
+            {
+                "english": "The room has been cleaned.",
+                "uzbek": "Xona tozalangan.",
+                "note": "Present Perfect Passive"
+            },
+            {
+                "english": "My car was stolen last night.",
+                "uzbek": "Mening mashinama kecha o'g'irlandi.",
+                "note": "Bajaruvchi noma'lum"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "The book written yesterday", "correct": "The book was written yesterday"},
+            {"wrong": "The window is break", "correct": "The window is broken"},
+            {"wrong": "It was did by him", "correct": "It was done by him"}
+        ]
+    },
+    
+    # IELTS LEVEL
+    {
+        "id": "reported_speech",
+        "title": "Reported Speech - O'zlashtirma gap",
+        "level": "ielts",
+        "rule": "Kimningdir so'zlarini boshqacha ifodalash. Zamon va zamonlar orqaga siljiydi.",
+        "structure": "Subject + said/told + (that) + clause",
+        "usage": [
+            "Birvaqtlar aytilgan gapni qayta aytish",
+            "Savol, buyruq, iltimosni o'zgartirish",
+            "Present → Past, Past → Past Perfect"
+        ],
+        "examples": [
+            {
+                "english": "She said, 'I am tired.' → She said (that) she was tired.",
+                "uzbek": "U 'Men charchadim' dedi → U charchagan ekanligini aytdi.",
+                "note": "Present → Past"
+            },
+            {
+                "english": "He asked me where I lived.",
+                "uzbek": "U mendan qayerda yashashimni so'radi.",
+                "note": "Savol - so'roq so'zdan keyin to'g'ri tartib"
+            },
+            {
+                "english": "She told me to close the door.",
+                "uzbek": "U menga eshikni yopishimni aytdi.",
+                "note": "Buytuq: told + object + to + verb"
+            },
+            {
+                "english": "'I have finished,' he said → He said he had finished.",
+                "uzbek": "'Tugatdim' dedi u → U tugatganligini aytdi.",
+                "note": "Present Perfect → Past Perfect"
+            },
+            {
+                "english": "They said they would come the next day.",
+                "uzbek": "Ular ertasi kuni kelishlarini aytishdi.",
+                "note": "Will → Would, tomorrow → the next day"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "He said me", "correct": "He told me" ,"note": "Say'dan keyin 'to' kerak yoki 'tell' ishlatiladi"},
+            {"wrong": "She asked me where do I live", "correct": "She asked me where I lived"},
+            {"wrong": "He said that he is busy", "correct": "He said that he was busy"}
+        ]
+    },
+    {
+        "id": "perfect_continuous",
+        "title": "Perfect Continuous Tenses - Tugallangan davomli zamonlar",
+        "level": "ielts",
+        "rule": "Harakatning davomiyligiga va tugallanishiga e'tibor.",
+        "structure": "Subject + have/has/had been + Verb-ing",
+        "usage": [
+            "Present Perfect Continuous: hozirga qadar davom etgan",
+            "Past Perfect Continuous: o'tmishda boshqa voqeagacha",
+            "For/Since bilan davomiylik"
+        ],
+        "examples": [
+            {
+                "english": "I have been studying English for 5 years.",
+                "uzbek": "Men 5 yildan beri ingliz tilini o'rganib kelyapman.",
+                "note": "Present Perfect Continuous"
+            },
+            {
+                "english": "She had been waiting for an hour when he arrived.",
+                "uzbek": "U kelganida u bir soatdan beri kutayotgan edi.",
+                "note": "Past Perfect Continuous"
+            },
+            {
+                "english": "They have been living in Tokyo since 2010.",
+                "uzbek": "Ular 2010-yildan beri Tokioda yashashyapti.",
+                "note": "'since' - boshlanish nuqtasi"
+            },
+            {
+                "english": "You look exhausted. Have you been running?",
+                "uzbek": "Siz charchaganga o'xshaysiz. Yugurgan edingizmi?",
+                "note": "Hozirgi holatning sababi"
+            },
+            {
+                "english": "I had been working there for two years before I quit.",
+                "uzbek": "Men ishdan boshdan oldin u yerda ikki yil ishlagan edim.",
+                "note": "O'tmishdagi davomiylik"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "I have been know him for years", "correct": "I have known him for years", "note": "State verbs Continuous'da emas"},
+            {"wrong": "She has been go to school", "correct": "She has been going to school"},
+            {"wrong": "How long you have been waiting?", "correct": "How long have you been waiting?"}
+        ]
+    },
+    {
+        "id": "inversion",
+        "title": "Inversion - Inversiya (Teskari tartib)",
+        "level": "ielts",
+        "rule": "Uslubiy ta'sir uchun yoki negativ/limiting so'zlardan keyin fe'l va ega o'rin almashadi.",
+        "structure": "Negativ/Limiting word + Auxiliary + Subject + Verb",
+        "usage": [
+            "Negativ so'zlar (never, rarely, seldom)",
+            "Only, not only",
+            "Shart gaplarida ('if' o'rniga)"
+        ],
+        "examples": [
+            {
+                "english": "Never have I seen such beauty.",
+                "uzbek": "Hech qachon bunday go'zallikni ko'rmaganman.",
+                "note": "Never bilan inversiya"
+            },
+            {
+                "english": "Only then did I understand the problem.",
+                "uzbek": "Faqat o'shanda men muammoni tushundim.",
+                "note": "Only + adverb"
+            },
+            {
+                "english": "Not only did she pass, but she also got the highest score.",
+                "uzbek": "U nafaqat o'tdi, balki eng yuqori ball oldi.",
+                "note": "Not only... but also"
+            },
+            {
+                "english": "Rarely do we see such dedication.",
+                "uzbek": "Bunday fidoyilikni kamdan-kam ko'ramiz.",
+                "note": "Rarely - inversiya talab qiladi"
+            },
+            {
+                "english": "Had I known, I would have come earlier.",
+                "uzbek": "Agar bilganimda, ertarroq kelgan bo'lardim.",
+                "note": "Shart gapi - 'If I had known' o'rniga"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "Never I have seen", "correct": "Never have I seen"},
+            {"wrong": "Only then I understood", "correct": "Only then did I understand"},
+            {"wrong": "Rarely we go there", "correct": "Rarely do we go there"}
+        ]
+    },
+    {
+        "id": "relative_clauses_advanced",
+        "title": "Advanced Relative Clauses - Murakkab bog'lovchi gaplar",
+        "level": "ielts",
+        "rule": "Who, which, that, where, when, whose - batafsil ma'lumot beruvchi gaplar.",
+        "structure": "Main clause + Relative pronoun + relative clause",
+        "usage": [
+            "Defining (aniqlovchi) - ajralmas",
+            "Non-defining (qo'shimcha ma'lumot) - vergul bilan",
+            "Whose - mulk ifodalash"
+        ],
+        "examples": [
+            {
+                "english": "The book that I read was fascinating.",
+                "uzbek": "Men o'qigan kitob juda qiziqarli edi.",
+                "note": "Defining clause - vergul yo'q"
+            },
+            {
+                "english": "My sister, who lives in London, is a doctor.",
+                "uzbek": "Mening opam, Londonda yashaydigan, shifokor.",
+                "note": "Non-defining - vergullar bor"
+            },
+            {
+                "english": "The man whose car was stolen called the police.",
+                "uzbek": "Mashinasi o'g'irlangan odam politsiyaga qo'ng'iroq qildi.",
+                "note": "Whose - mulk"
+            },
+            {
+                "english": "This is the house where I was born.",
+                "uzbek": "Bu men tug'ilgan uy.",
+                "note": "Where - joy"
+            },
+            {
+                "english": "I remember the day when we first met.",
+                "uzbek": "Biz birinchi uchrashgan kunni eslayman.",
+                "note": "When - vaqt"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "The book what I read", "correct": "The book that/which I read"},
+            {"wrong": "My friend, that lives abroad", "correct": "My friend, who lives abroad", "note": "Non-defining'da 'that' emas"},
+            {"wrong": "The man, who's car", "correct": "The man whose car", "note": "whose ≠ who's"}
+        ]
+    },
+    {
+        "id": "conditionals_mixed",
+        "title": "Mixed Conditionals - Aralash shartli gaplar",
+        "level": "ielts",
+        "rule": "O'tmish shart va hozirgi natija, yoki hozirgi shart va o'tmish natija.",
+        "structure": "If + Past Perfect, would + base (yoki aksi)",
+        "usage": [
+            "O'tmish voqea, hozirgi natija",
+            "Hozirgi holat, o'tmishga ta'siri",
+            "Hypothetical (faraziy) holatlar"
+        ],
+        "examples": [
+            {
+                "english": "If I had studied harder, I would be successful now.",
+                "uzbek": "Agar ko'proq o'qiganimda, hozir muvaffaqiyatli bo'lardim.",
+                "note": "O'tmish harakat → hozirgi natija"
+            },
+            {
+                "english": "If I were taller, I would have become a basketball player.",
+                "uzbek": "Agar balandroq bo'lganimda, basketbolchi bo'lgan bo'lardim.",
+                "note": "Hozirgi holat → o'tmish natija"
+            },
+            {
+                "english": "If she had listened to me, she wouldn't be in trouble now.",
+                "uzbek": "Agar u meni tinglagan bo'lsa, hozir muammoda bo'lmasdi.",
+                "note": "O'tmish xato → hozirgi muammo"
+            },
+            {
+                "english": "If I knew his address, I would have visited him yesterday.",
+                "uzbek": "Agar manzilini bilganimda, kecha unga borgan bo'lardim.",
+                "note": "Hozirgi bilmaslik → o'tmish imkonsizlik"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "If I studied, I would be rich", "correct": "If I had studied, I would be rich now"},
+            {"wrong": "If I was rich, I would have bought", "correct": "If I were rich, I would have bought"}
+        ]
+    },
+    {
+        "id": "subjunctive_mood",
+        "title": "Subjunctive Mood - Shart mayl",
+        "level": "ielts",
+        "rule": "Talab, taklif,  zaruriyat natijasidagi tavsiyani ifodalash uchun.",
+        "structure": "Subject + suggest/insist/demand + that + subject + base verb",
+        "usage": [
+            "Formal talab va takliflar",
+            "Zaruriyat ifodalash",
+            "'Were' barcha shaxslar uchun"
+        ],
+        "examples": [
+            {
+                "english": "I suggest that he study harder.",
+                "uzbek": "Men unga qattiqroq o'qishni taklif qilaman.",
+                "note": "'study' - 'studies' emas"
+            },
+            {
+                "english": "It is essential that she be present.",
+                "uzbek": "Uning qatnashishi shart.",
+                "note": "'be' - 'is' emas"
+            },
+            {
+                "english": "I wish I were taller.",
+                "uzbek": "Qaniydi balandroq bo'lganimda.",
+                "note": "'were' barcha shaxslar uchun"
+            },
+            {
+                "english": "The doctor recommended that he quit smoking.",
+                "uzbek": "Shifokor unga chekishni tashlashni tavsiya qildi.",
+                "note": "'quit' - 'quits' emas"
+            },
+            {
+                "english": "If I were you, I would apologize.",
+                "uzbek": "Agar men siz bo'lsam, uzr so'rardim.",
+                "note": "Maslahat berish"
+            }
+        ],
+        "common_mistakes": [
+            {"wrong": "I suggest that he studies", "correct": "I suggest that he study"},
+            {"wrong": "If I was you", "correct": "If I were you"},
+            {"wrong": "It's important that she is here", "correct": "It's important that she be here"}
+        ]
+    }
+]
+
+# Save to JSON
+output_file = Path(__file__).parent / "bot" / "data" / "grammar.json"
+with open(output_file, 'w', encoding='utf-8') as f:
+    json.dump(enhanced_grammar, f, ensure_ascii=False, indent=2)
+
+print(f"✅ Grammar dataset yaratildi: {len(enhanced_grammar)} ta qoida")
+print(f"   - Beginner: {sum(1 for g in enhanced_grammar if g['level'] == 'beginner')}")
+print(f"   - Intermediate: {sum(1 for g in enhanced_grammar if g['level'] == 'intermediate')}")
+print(f"   - IELTS: {sum(1 for g in enhanced_grammar if g['level'] == 'ielts')}")
+print(f"\n📁 Saqlandi: {output_file}")
+print("✨ Har bir qoidada 3-5 ta misol + tarjimalar!")

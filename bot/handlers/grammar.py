@@ -60,12 +60,42 @@ async def show_grammar(message: types.Message):
         await message.answer("❌ Mavzu topilmadi")
         return
 
+    # Format response with new structure
+    response = f"📘 <b>{g['title']}</b>\n\n"
+    response += f"📖 <b>Qoida:</b>\n{g['rule']}\n\n"
+    response += f"📝 <b>Struktura:</b>\n<code>{g['structure']}</code>\n\n"
+    
+    # Usage cases
+    if 'usage' in g:
+        response += "💡 <b>Ishlatilishi:</b>\n"
+        for idx, use in enumerate(g['usage'], 1):
+            response += f"{idx}. {use}\n"
+        response += "\n"
+    
+    # Examples with translations
+    if 'examples' in g:
+        response += "✏️ <b>Misollar:</b>\n\n"
+        for idx, ex in enumerate(g['examples'][:3], 1):  # First 3 examples
+            response += f"{idx}. <i>{ex['english']}</i>\n"
+            response += f"   {ex['uzbek']}\n"
+            if 'note' in ex:
+                response += f"   💭 {ex['note']}\n"
+            response += "\n"
+    
+    # Common mistakes
+    if 'common_mistakes' in g and g['common_mistakes']:
+        response += "⚠️ <b>Keng tarqalgan xatolar:</b>\n"
+        for mistake in g['common_mistakes'][:2]:  # First 2 mistakes  
+            response += f"❌ {mistake['wrong']}\n"
+            response += f"✅ {mistake['correct']}\n"
+            if 'note' in mistake:
+                response += f"   💬 {mistake['note']}\n"
+            response += "\n"
+
     await message.answer(
-        f"📘 {g['title']}\n\n"
-        f"📖 Qoida:\n{g['rule']}\n\n"
-        f"✏️ Misol:\n{g['example']}\n\n"
-        f"💡 Tushuntirish:\n{g['explanation']}",
-        reply_markup=grammar_menu
+        response,
+        reply_markup=grammar_menu,
+        parse_mode="HTML"
     )
 
 

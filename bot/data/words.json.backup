@@ -1,0 +1,257 @@
+[
+  {
+    "word": "Apple",
+    "meaning": "Olma",
+    "level": "beginner"
+  },
+  {
+    "word": "Book",
+    "meaning": "Kitob",
+    "level": "beginner"
+  },
+  {
+    "word": "Teacher",
+    "meaning": "O'qituvchi",
+    "level": "beginner"
+  },
+  {
+    "word": "Happy",
+    "meaning": "Baxtli",
+    "level": "beginner"
+  },
+  {
+    "word": "Water",
+    "meaning": "Suv",
+    "level": "beginner"
+  },
+  {
+    "word": "Friend",
+    "meaning": "Do'st",
+    "level": "beginner"
+  },
+  {
+    "word": "House",
+    "meaning": "Uy",
+    "level": "beginner"
+  },
+  {
+    "word": "Beautiful",
+    "meaning": "Chiroyli",
+    "level": "beginner"
+  },
+  {
+    "word": "Morning",
+    "meaning": "Ertalab",
+    "level": "beginner"
+  },
+  {
+    "word": "Smile",
+    "meaning": "Tabassum",
+    "level": "beginner"
+  },
+  {
+    "word": "Dog",
+    "meaning": "It",
+    "level": "beginner"
+  },
+  {
+    "word": "Cat",
+    "meaning": "Mushuk",
+    "level": "beginner"
+  },
+  {
+    "word": "Tree",
+    "meaning": "Daraxt",
+    "level": "beginner"
+  },
+  {
+    "word": "Flower",
+    "meaning": "Gul",
+    "level": "beginner"
+  },
+  {
+    "word": "Sun",
+    "meaning": "Quyosh",
+    "level": "beginner"
+  },
+  {
+    "word": "Moon",
+    "meaning": "Oy",
+    "level": "beginner"
+  },
+  {
+    "word": "Star",
+    "meaning": "Yulduz",
+    "level": "beginner"
+  },
+  {
+    "word": "Rain",
+    "meaning": "Yomg'ir",
+    "level": "beginner"
+  },
+  {
+    "word": "Snow",
+    "meaning": "Qor",
+    "level": "beginner"
+  },
+  {
+    "word": "Wind",
+    "meaning": "Shamol",
+    "level": "beginner"
+  },
+  {
+    "word": "Language",
+    "meaning": "Til",
+    "level": "intermediate"
+  },
+  {
+    "word": "Development",
+    "meaning": "Rivojlanish",
+    "level": "intermediate"
+  },
+  {
+    "word": "Comprehensive",
+    "meaning": "Keng, to'liq",
+    "level": "intermediate"
+  },
+  {
+    "word": "Ambiguous",
+    "meaning": "Noaniq, ko'p ma'noli",
+    "level": "intermediate"
+  },
+  {
+    "word": "Facilitate",
+    "meaning": "Osonlashtirmoq",
+    "level": "intermediate"
+  },
+  {
+    "word": "Pragmatic",
+    "meaning": "Amaliy, haqiqatga asoslangan",
+    "level": "intermediate"
+  },
+  {
+    "word": "Collaborate",
+    "meaning": "Hamkorlik qilmoq",
+    "level": "intermediate"
+  },
+  {
+    "word": "Innovation",
+    "meaning": "Yangiliklari, o'zgarish",
+    "level": "intermediate"
+  },
+  {
+    "word": "Persistence",
+    "meaning": "Ustonlik, qat'iylik",
+    "level": "intermediate"
+  },
+  {
+    "word": "Motivation",
+    "meaning": "Motivatsiya, ishga chorlash",
+    "level": "intermediate"
+  },
+  {
+    "word": "Perspective",
+    "meaning": "Nuqtai nazar",
+    "level": "intermediate"
+  },
+  {
+    "word": "Strategy",
+    "meaning": "Strategiya",
+    "level": "intermediate"
+  },
+  {
+    "word": "Challenge",
+    "meaning": "Qiyin masala",
+    "level": "intermediate"
+  },
+  {
+    "word": "Success",
+    "meaning": "Muvaffaqiyat",
+    "level": "intermediate"
+  },
+  {
+    "word": "Failure",
+    "meaning": "Muvaffaqiyatsizlik",
+    "level": "intermediate"
+  },
+  {
+    "word": "Proficient",
+    "meaning": "Mohir, mahir",
+    "level": "ielts"
+  },
+  {
+    "word": "Exacerbate",
+    "meaning": "Kuchaytirmoq, og'irlashtirmoq",
+    "level": "ielts"
+  },
+  {
+    "word": "Ubiquitous",
+    "meaning": "Hamma joyda bo'lgan",
+    "level": "ielts"
+  },
+  {
+    "word": "Ephemeral",
+    "meaning": "Vaqtinchalik, qisqa muddatli",
+    "level": "ielts"
+  },
+  {
+    "word": "Meticulous",
+    "meaning": "Ehtiyotkorlik bilan, tafsiliy",
+    "level": "ielts"
+  },
+  {
+    "word": "Eloquent",
+    "meaning": "Ozboshimchali, ma'lum so'zlash",
+    "level": "ielts"
+  },
+  {
+    "word": "Perspicacious",
+    "meaning": "Chuqur tushunishga ega",
+    "level": "ielts"
+  },
+  {
+    "word": "Sagacious",
+    "meaning": "Aql-idrok, xira",
+    "level": "ielts"
+  },
+  {
+    "word": "Superfluous",
+    "meaning": "Ortiqcha, keraksiz",
+    "level": "ielts"
+  },
+  {
+    "word": "Virtuoso",
+    "meaning": "MasterClass, ustasi",
+    "level": "ielts"
+  },
+  {
+    "word": "Pragmatism",
+    "meaning": "Pragmatizm, amaliylik",
+    "level": "ielts"
+  },
+  {
+    "word": "Serendipity",
+    "meaning": "Tasodifiy omad",
+    "level": "ielts"
+  },
+  {
+    "word": "Zealous",
+    "meaning": "Ishtiyoqli, jonbozlik bilan",
+    "level": "ielts"
+  },
+  {
+    "word": "Verbose",
+    "meaning": "Ko'p so'z, jabbor",
+    "level": "ielts"
+  },
+  {
+    "word": "Nascent",
+    "meaning": "Paydo bo'layotgan, yangi tug'ilgan",
+    "level": "ielts"
+  },
+  {
+    "word": "Lucid",
+    "meaning": "Tushunarlı, oydinov",
+    "level": "ielts"
+  }
+]
