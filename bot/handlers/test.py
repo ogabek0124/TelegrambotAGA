@@ -1,5 +1,6 @@
 import json
 import random
+from pathlib import Path
 from aiogram import Router, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from keyboards.menus import main_menu
@@ -12,7 +13,9 @@ router = Router()
 ACTIVE_TESTS = {}
 
 # So'zlarni yuklash
-with open("data/words.json", "r", encoding="utf-8") as f:
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+with open(DATA_DIR / "words.json", "r", encoding="utf-8") as f:
     WORDS = json.load(f)
 
 

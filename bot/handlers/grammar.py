@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from aiogram import Router, types
 from keyboards.grammar_menu import grammar_menu
 from keyboards.menus import main_menu
@@ -7,7 +8,9 @@ from services.db import get_user_level
 router = Router()
 
 # Grammar yuklash
-with open("data/grammar.json", "r", encoding="utf-8") as f:
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+with open(DATA_DIR / "grammar.json", "r", encoding="utf-8") as f:
     GRAMMAR = json.load(f)
 
 # ID mapping

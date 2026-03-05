@@ -1,7 +1,10 @@
 import sqlite3
 from datetime import date, timedelta
+from pathlib import Path
 
-DB_NAME = "data/progress.db"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_NAME = str(DATA_DIR / "progress.db")
 
 
 def get_connection():

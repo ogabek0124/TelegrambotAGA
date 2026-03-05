@@ -1,5 +1,6 @@
 import json
 import random
+from pathlib import Path
 from aiogram import Router, types
 from keyboards.menus import main_menu
 from services.db import get_connection, get_today
@@ -7,14 +8,16 @@ from services.db import get_connection, get_today
 router = Router()
 
 # So'zlar va grammar yuklash
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
 try:
-    with open("data/words.json", "r", encoding="utf-8") as f:
+    with open(DATA_DIR / "words.json", "r", encoding="utf-8") as f:
         WORDS = json.load(f)
 except:
     WORDS = []
 
 try:
-    with open("data/grammar.json", "r", encoding="utf-8") as f:
+    with open(DATA_DIR / "grammar.json", "r", encoding="utf-8") as f:
         GRAMMAR = json.load(f)
 except:
     GRAMMAR = []
