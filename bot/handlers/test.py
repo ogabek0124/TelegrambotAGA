@@ -5,6 +5,7 @@ from aiogram import Router, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from keyboards.menus import main_menu
 from services.db import get_user_level
+from services.user_sync import update_user_progress
 import sqlite3
 
 router = Router()
@@ -30,9 +31,9 @@ def create_continue_keyboard():
     )
 
 
-def save_test_result(user_id: int, correct: int, total: int):
-    """Test natijasini saqlash"""
-    from services.db import get_connection, update_streak, get_today
+def save_test_result(user_id: int, correct: int, total: int, level: str = None):
+    """Test natijasini saqlash va Django admin'ga sync qilish"""
+    from services.db import get_connection, update_streak, get_today, get_streak
     
     with get_connection() as conn:
         c = conn.cursor()
@@ -46,7 +47,18 @@ def save_test_result(user_id: int, correct: int, total: int):
         """, (user_id, correct, total, get_today(), correct, total, get_today()))
         conn.commit()
     
+    # Streak'ni yangilash
     update_streak(user_id)
+    streak = get_streak(user_id)
+    
+    # Django admin'ga sync qilish
+    update_user_progress(
+        telegram_id=user_id,
+        correct=correct,
+        total=total,
+        streak=streak,
+        level=level
+    )
 
 
 def create_options_keyboard(options):
@@ -117,8 +129,9 @@ async def show_question(message: types.Message, user_id: int):
         correct = test_data["correct"]
         total = len(questions)
         percentage = (correct / total) * 100
+        level = test_data.get("level", "beginner")
 
-        save_test_result(user_id, correct, total)
+        save_test_result(user_id, correct, total, level)
 
         await message.answer(
             f"Test tugadi!\n\n"

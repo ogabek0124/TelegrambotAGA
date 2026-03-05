@@ -2,6 +2,7 @@ from aiogram import Router, types
 from keyboards.menus import main_menu
 from keyboards.level_menu import level_menu
 from services.db import set_user_level, get_user_level
+from services.user_sync import update_user_progress
 
 router = Router()
 
@@ -46,10 +47,13 @@ async def save_level(message: types.Message):
 
     user_id = message.from_user.id
     set_user_level(user_id, level)
+    
+    # Django admin'ga sync qilish
+    update_user_progress(telegram_id=user_id, level=level)
 
     await message.answer(
         f"🎉 Darajangiz saqlandi: {level.capitalize()}\n\n"
-        f"Endi siz {level.capitalize()} darajasiga mos testlarni yechishingiz mumkin! 🚀",
+        f"Ender siz {level.capitalize()} darajasiga mos testlarni yechishingiz mumkin! 🚀",
         reply_markup=main_menu
     )
 
