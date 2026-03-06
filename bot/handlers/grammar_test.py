@@ -225,12 +225,12 @@ async def stop_grammar_test(callback: CallbackQuery):
     if user_id in GRAMMAR_TEST_STATE:
         del GRAMMAR_TEST_STATE[user_id]
     
+    await callback.answer()
     await callback.message.edit_text(
         "🛑 Test to'xtatildi\n\n"
         "Quyidagilardan birini tanlang:",
         reply_markup=get_main_menu_inline()
     )
-    await callback.answer()
 
 
 def register(dp):
