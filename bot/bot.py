@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import sys
+import zlib
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 
@@ -22,6 +23,56 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 logger.info("Logger tayyorlandi")
+
+_INSTANCE_LOCK_CONN = None
+
+
+def _acquire_instance_lock() -> bool:
+    """Prevent multiple polling instances when using PostgreSQL (Render)."""
+    global _INSTANCE_LOCK_CONN
+
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        return True
+
+    try:
+        import psycopg2
+
+        conn = psycopg2.connect(database_url, connect_timeout=5)
+        conn.autocommit = True
+        cur = conn.cursor()
+        lock_id = zlib.crc32(TOKEN.encode("utf-8"))
+        cur.execute("SELECT pg_try_advisory_lock(%s)", (lock_id,))
+        locked = bool(cur.fetchone()[0])
+        if locked:
+            _INSTANCE_LOCK_CONN = conn
+            logger.info("Single-instance lock olindi")
+            return True
+
+        conn.close()
+        logger.error("Boshqa instance allaqachon ishlayapti. Joriy instance to'xtatiladi.")
+        return False
+    except Exception as e:
+        # Fail-open: lock ishlamasa ham botni tushiramiz, lekin sababni log qilamiz.
+        logger.warning(f"Instance lock olinmadi ({e}). Polling davom etadi.")
+        return True
+
+
+def _release_instance_lock():
+    global _INSTANCE_LOCK_CONN
+
+    if _INSTANCE_LOCK_CONN is None:
+        return
+
+    try:
+        cur = _INSTANCE_LOCK_CONN.cursor()
+        lock_id = zlib.crc32(TOKEN.encode("utf-8"))
+        cur.execute("SELECT pg_advisory_unlock(%s)", (lock_id,))
+    except Exception as e:
+        logger.warning(f"Instance lock bo'shatishda xato: {e}")
+    finally:
+        _INSTANCE_LOCK_CONN.close()
+        _INSTANCE_LOCK_CONN = None
 
 # Bot va Dispatcher
 logger.info("Bot va Dispatcher yaratilmoqda...")
@@ -108,6 +159,9 @@ async def start_healthcheck_server():
 async def main():
     health_server = None
     try:
+        if not _acquire_instance_lock():
+            return
+
         # Render Web Service timeout bo'lmasligi uchun port ochamiz.
         health_server = await start_healthcheck_server()
 
@@ -132,6 +186,7 @@ async def main():
         print(f"\n❌ XATO YUZAGA KELDI: {e}")
         logger.exception("Bot xatosi")
     finally:
+        _release_instance_lock()
         if health_server is not None:
             health_server.close()
             await health_server.wait_closed()
