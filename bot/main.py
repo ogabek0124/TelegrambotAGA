@@ -1,9 +1,7 @@
-"""Main entrypoint for bot runtime."""
-
 import asyncio
 
-from bot import main as run_bot
+from bot import main
 
 
 if __name__ == "__main__":
-    asyncio.run(run_bot())
+    asyncio.run(main())

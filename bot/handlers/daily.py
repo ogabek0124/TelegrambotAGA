@@ -99,6 +99,7 @@ def get_daily_content(user_id: int):
 @router.message(lambda m: m.text and "Bugun darsga" in m.text)
 async def daily_lesson(message: types.Message):
     try:
+        await message.answer("⏳ Yuklanmoqda...")
         user_id = message.from_user.id
         
         # Tekshirish: bugun o'qilganmi?

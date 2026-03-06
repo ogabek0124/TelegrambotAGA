@@ -30,6 +30,7 @@ GRAMMAR_MAP = {
 
 @router.callback_query(F.data == "menu:grammar")
 async def show_grammar_menu(callback: CallbackQuery):
+    await callback.answer("⏳ Yuklanmoqda...")
     user_id = callback.from_user.id
     user_level = get_user_level(user_id) or "beginner"
     
@@ -50,11 +51,12 @@ async def show_grammar_menu(callback: CallbackQuery):
         parse_mode="HTML",
         reply_markup=grammar_keyboard
     )
-    await callback.answer()
+
 
 
 @router.callback_query(F.data.startswith("grammar:"))
 async def show_grammar(callback: CallbackQuery):
+    await callback.answer("🔍 Qidirilmoqda...")
     grammar_id = callback.data.split(":")[1]
 
     # Find grammar
@@ -106,7 +108,7 @@ async def show_grammar(callback: CallbackQuery):
         reply_markup=back_keyboard,
         parse_mode="HTML"
     )
-    await callback.answer()
+
 
 
 def register(dp):

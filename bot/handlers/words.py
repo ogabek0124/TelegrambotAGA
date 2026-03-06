@@ -20,6 +20,7 @@ WORDS_STATE = {}
 @router.message(lambda m: m.text and ("So'zlar" in m.text or "So’zlar" in m.text))
 async def show_words(message: types.Message):
     """So'zlarni ko'rsatish"""
+    await message.answer("🔍 Qidirilmoqda...")
     user_id = message.from_user.id
     user_level = get_user_level(user_id) or "beginner"
 

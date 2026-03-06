@@ -1,8 +1,10 @@
+import asyncio
+
 from aiogram import Router, types, F
 from aiogram.types import CallbackQuery
 from keyboards.inline_menus import get_level_menu_inline, get_main_menu_inline
 from services.db import set_user_level, get_user_level
-from services.user_sync import update_user_progress
+from services.user_sync import async_update_user_progress
 
 router = Router()
 
@@ -10,6 +12,7 @@ router = Router()
 @router.callback_query(F.data.startswith("level:"))
 async def handle_level_selection(callback: CallbackQuery):
     """Inline button orqali daraja tanlash"""
+    await callback.answer("⏳ Yuklanmoqda...")
     level = callback.data.split(":")[1]
     
     if level not in ["beginner", "intermediate", "ielts"]:
@@ -20,7 +23,7 @@ async def handle_level_selection(callback: CallbackQuery):
     set_user_level(user_id, level)
     
     # Django admin'ga sync qilish
-    update_user_progress(telegram_id=user_id, level=level)
+    asyncio.create_task(async_update_user_progress(telegram_id=user_id, level=level))
     
     level_names = {
         "beginner": "🟢 Beginner",

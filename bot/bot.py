@@ -6,13 +6,12 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 
 from config import TOKEN
+from middlewares.user_context import UserContextMiddleware
 from services.db import init_db
-from middlewares.performance import PerformanceMiddleware
-from middlewares.access_control import AccessControlMiddleware
 from handlers import (
-    start, level, words, test, grammar, progress, leaderboard, 
+    start, level, words, test, grammar, progress, leaderboard,
     daily, streak, videos, books, callbacks, flashcard, word_categories,
-    grammar_test, test_history_handler, achievements_handler, admin, errors
+    grammar_test, test_history_handler, achievements_handler, admin, error_handler
 )
 
 # Logging setup
@@ -28,15 +27,8 @@ logger.info("Logger tayyorlandi")
 logger.info("Bot va Dispatcher yaratilmoqda...")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+dp.update.middleware(UserContextMiddleware())
 logger.info("Bot va Dispatcher tayyorlandi")
-
-# Middlewares
-perf_middleware = PerformanceMiddleware(slow_threshold=1.0)
-access_middleware = AccessControlMiddleware()
-dp.message.middleware(perf_middleware)
-dp.callback_query.middleware(perf_middleware)
-dp.message.middleware(access_middleware)
-dp.callback_query.middleware(access_middleware)
 
 # Handlers registration
 logger.info("Handlers ro'yxatga olinmoqda...")
@@ -52,8 +44,6 @@ test_history_handler.register(dp)
 logger.info("✓ test_history handler")
 achievements_handler.register(dp)
 logger.info("✓ achievements handler")
-admin.register(dp)
-logger.info("✓ admin handler")
 start.register(dp)
 logger.info("✓ start handler")
 level.register(dp)
@@ -76,8 +66,10 @@ videos.register(dp)
 logger.info("✓ videos handler")
 books.register(dp)
 logger.info("✓ books handler")
-errors.register(dp)
-logger.info("✓ errors handler")
+admin.register(dp)
+logger.info("✓ admin handler")
+error_handler.register(dp)
+logger.info("✓ error handler")
 logger.info("Barcha handlers ro'yxatga olingan!")
 
 
@@ -86,12 +78,7 @@ async def set_default_commands(bot: Bot):
     commands = [
         BotCommand(command="start", description="Botni ishga tushirish"),
         BotCommand(command="help", description="Yordam"),
-        BotCommand(command="referral", description="Referal linkingiz"),
         BotCommand(command="admin", description="Admin panel"),
-        BotCommand(command="stats", description="Bot statistikasi (admin)"),
-        BotCommand(command="broadcast", description="Barcha userga xabar (admin)"),
-        BotCommand(command="block", description="User bloklash (admin)"),
-        BotCommand(command="unblock", description="Userni ochish (admin)"),
     ]
     await bot.set_my_commands(commands)
 

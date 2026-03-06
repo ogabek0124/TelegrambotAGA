@@ -36,18 +36,20 @@ CATEGORY_STATE = {}
 @router.callback_query(F.data == "words:categories")
 async def show_categories(callback: CallbackQuery):
     """Kategoriyalar ro'yxati"""
+    await callback.answer("⏳ Yuklanmoqda...")
     await callback.message.edit_text(
         "🗂 <b>So'z kategoriyalari</b>\n\n"
         "Qaysi turkumdagi so'zlarni o'rganishni xohlaysiz?",
         reply_markup=get_word_categories_inline(),
         parse_mode="HTML"
     )
-    await callback.answer()
+
 
 
 @router.callback_query(F.data.startswith("category:"))
 async def show_category_words(callback: CallbackQuery):
     """Kategoriya bo'yicha so'zlar"""
+    await callback.answer("🔍 Qidirilmoqda...")
     category = callback.data.split(":")[1]
     user_id = callback.from_user.id
     user_level = get_user_level(user_id) or "beginner"

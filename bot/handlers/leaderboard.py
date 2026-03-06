@@ -7,6 +7,7 @@ router = Router()
 
 @router.callback_query(F.data == "menu:leaderboard")
 async def show_leaderboard(callback: CallbackQuery):
+    await callback.answer("🔍 Qidirilmoqda...")
     leaders = get_leaderboard(limit=10)
     
     back_keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -18,7 +19,6 @@ async def show_leaderboard(callback: CallbackQuery):
             "❗ Leaderboard bo'sh",
             reply_markup=back_keyboard
         )
-        await callback.answer()
         return
     
     text = "🏆 <b>Top 10 O'quvchilar</b>\n\n"
@@ -27,7 +27,7 @@ async def show_leaderboard(callback: CallbackQuery):
         text += f"{i}. Foydalanuvchi #{user_id}: {streak}🔥 ({total} so'z)\n"
 
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=back_keyboard)
-    await callback.answer()
+
 
 
 def register(dp):

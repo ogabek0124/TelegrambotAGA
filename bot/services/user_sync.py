@@ -1,6 +1,7 @@
 """
 Telegram user'larni Django admin'ga sync qilish uchun yordamchi funksiyalar
 """
+import asyncio
 import os
 from datetime import date
 from dotenv import load_dotenv
@@ -32,8 +33,10 @@ def sync_telegram_user(telegram_id: int, username: str = None, first_name: str =
         # SQLite rejimida - sync qilish mumkin emas
         return False
     
+    conn = None
+    cursor = None
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL, connect_timeout=3)
         cursor = conn.cursor()
         
         # Check if user exists in Django's api_telegramuser table
@@ -59,13 +62,16 @@ def sync_telegram_user(telegram_id: int, username: str = None, first_name: str =
             """, (telegram_id, username, first_name))
         
         conn.commit()
-        cursor.close()
-        conn.close()
         return True
         
     except Exception as e:
         print(f"❌ User sync error: {e}")
         return False
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 
 def update_user_progress(telegram_id: int, correct: int = None, total: int = None, 
@@ -83,8 +89,10 @@ def update_user_progress(telegram_id: int, correct: int = None, total: int = Non
     if not USE_POSTGRES or not DATABASE_URL:
         return False
     
+    conn = None
+    cursor = None
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL, connect_timeout=3)
         cursor = conn.cursor()
         
         # Build UPDATE query dynamically
@@ -126,13 +134,16 @@ def update_user_progress(telegram_id: int, correct: int = None, total: int = Non
         
         cursor.execute(query, values)
         conn.commit()
-        cursor.close()
-        conn.close()
         return True
         
     except Exception as e:
         print(f"❌ Progress sync error: {e}")
         return False
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 
 def get_all_telegram_users():
@@ -142,8 +153,10 @@ def get_all_telegram_users():
     if not USE_POSTGRES or not DATABASE_URL:
         return []
     
+    conn = None
+    cursor = None
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL, connect_timeout=3)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
         cursor.execute("""
@@ -153,11 +166,36 @@ def get_all_telegram_users():
             ORDER BY created_at DESC
         """)
         
-        users = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return users
+        return cursor.fetchall()
         
     except Exception as e:
         print(f"❌ Get users error: {e}")
         return []
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+async def async_sync_telegram_user(telegram_id: int, username: str = None, first_name: str = None):
+    """Run blocking sync in thread to keep bot responses fast."""
+    return await asyncio.to_thread(sync_telegram_user, telegram_id, username, first_name)
+
+
+async def async_update_user_progress(
+    telegram_id: int,
+    correct: int = None,
+    total: int = None,
+    streak: int = None,
+    level: str = None,
+):
+    """Run blocking sync in thread to keep handlers non-blocking."""
+    return await asyncio.to_thread(
+        update_user_progress,
+        telegram_id,
+        correct,
+        total,
+        streak,
+        level,
+    )

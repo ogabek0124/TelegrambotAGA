@@ -1,163 +1,157 @@
-import asyncio
-from aiogram import Router, types
+import os
+from typing import Dict
+
+from aiogram import F, Router, types
 from aiogram.filters import Command
-from config import ADMIN_IDS
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
 from services.db import (
-    get_all_user_ids,
-    block_user,
-    unblock_user,
-    is_user_blocked,
+    get_admin_stats,
+    get_all_active_user_ids,
+    mark_user_inactive,
+    set_user_blocked,
 )
-from services.logic import format_stats_message
 
 router = Router()
 
+ADMIN_STATES: Dict[int, str] = {}
+
+
+def _admin_ids() -> set[int]:
+    raw = os.getenv("ADMIN_IDS", "")
+    values = {v.strip() for v in raw.split(",") if v.strip()}
+    return {int(v) for v in values if v.isdigit()}
+
 
 def _is_admin(user_id: int) -> bool:
-    return user_id in ADMIN_IDS
+    return user_id in _admin_ids()
 
 
-def _parse_target_user_id(text: str) -> int | None:
-    parts = (text or "").split(maxsplit=1)
-    if len(parts) < 2 or not parts[1].isdigit():
-        return None
-    return int(parts[1])
+def get_admin_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📊 Statistika", callback_data="admin:stats")],
+            [InlineKeyboardButton(text="📢 Broadcast", callback_data="admin:broadcast")],
+            [InlineKeyboardButton(text="🚫 Foydalanuvchini bloklash", callback_data="admin:block")],
+            [InlineKeyboardButton(text="⚡ Aktiv foydalanuvchilar", callback_data="admin:active")],
+            [InlineKeyboardButton(text="🏠 Menu", callback_data="back:main")],
+        ]
+    )
 
 
 @router.message(Command("admin"))
 async def admin_panel(message: types.Message):
     if not _is_admin(message.from_user.id):
-        await message.answer("⛔ Sizda admin huquqi yo'q")
+        await message.answer("⛔ Sizda admin ruxsat yo'q.")
         return
 
     await message.answer(
-        format_stats_message() + "\n\n"
-        "Buyruqlar:\n"
-        "• <code>/broadcast matn</code>\n"
-        "• <code>/block USER_ID</code>\n"
-        "• <code>/unblock USER_ID</code>\n"
-        "• <code>/stats</code>",
+        "🛠 <b>Admin panel</b>\n\nKerakli bo'limni tanlang:",
         parse_mode="HTML",
+        reply_markup=get_admin_menu(),
     )
 
 
-@router.message(Command("stats"))
-async def admin_stats(message: types.Message):
-    if not _is_admin(message.from_user.id):
+@router.callback_query(F.data.startswith("admin:"))
+async def admin_actions(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    if not _is_admin(user_id):
+        await callback.answer("⛔ Ruxsat yo'q", show_alert=True)
         return
 
-    await message.answer(format_stats_message(), parse_mode="HTML")
+    action = callback.data.split(":", 1)[1]
+    await callback.answer("⏳ Yuklanmoqda...")
 
-
-@router.message(Command("block"))
-async def admin_block(message: types.Message):
-    if not _is_admin(message.from_user.id):
+    if action == "stats":
+        stats = get_admin_stats()
+        await callback.message.edit_text(
+            "📊 <b>Bot statistikasi</b>\n\n"
+            f"👥 Jami foydalanuvchilar: <b>{stats['total_users']}</b>\n"
+            f"📈 Bugun qo'shilgan: <b>{stats['today_joined']}</b>\n"
+            f"⚡ Aktiv foydalanuvchilar: <b>{stats['active_users']}</b>",
+            parse_mode="HTML",
+            reply_markup=get_admin_menu(),
+        )
         return
 
-    target_id = _parse_target_user_id(message.text or "")
-    if target_id is None:
-        await message.answer("Foydalanish: /block USER_ID")
+    if action == "active":
+        stats = get_admin_stats()
+        await callback.message.edit_text(
+            "⚡ <b>Aktiv foydalanuvchilar</b>\n\n"
+            f"Bugungi aktiv userlar: <b>{stats['active_users']}</b>",
+            parse_mode="HTML",
+            reply_markup=get_admin_menu(),
+        )
         return
 
-    if is_user_blocked(target_id):
-        await message.answer("Bu foydalanuvchi allaqachon bloklangan")
+    if action == "broadcast":
+        ADMIN_STATES[user_id] = "broadcast"
+        await callback.message.answer(
+            "📢 Yuboriladigan xabar matnini kiriting.\n\nBekor qilish: /admin"
+        )
         return
 
-    block_user(target_id)
-    await message.answer(f"✅ Bloklandi: <code>{target_id}</code>", parse_mode="HTML")
-
-
-@router.message(Command("unblock"))
-async def admin_unblock(message: types.Message):
-    if not _is_admin(message.from_user.id):
+    if action == "block":
+        ADMIN_STATES[user_id] = "block"
+        await callback.message.answer(
+            "🚫 Bloklash uchun foydalanuvchi `user_id` ni yuboring.\n\nBekor qilish: /admin",
+            parse_mode="Markdown",
+        )
         return
 
-    target_id = _parse_target_user_id(message.text or "")
-    if target_id is None:
-        await message.answer("Foydalanish: /unblock USER_ID")
+
+@router.message(lambda m: m.from_user is not None and m.from_user.id in ADMIN_STATES)
+async def admin_state_input(message: types.Message):
+    user_id = message.from_user.id
+    state = ADMIN_STATES.get(user_id)
+
+    if not state or not _is_admin(user_id):
         return
 
-    if not is_user_blocked(target_id):
-        await message.answer("Bu foydalanuvchi bloklanmagan")
+    if state == "block":
+        raw = (message.text or "").strip()
+        if not raw.isdigit():
+            await message.answer("❌ Noto'g'ri ID. Faqat raqam yuboring.")
+            return
+
+        target_user_id = int(raw)
+        set_user_blocked(target_user_id, True)
+        ADMIN_STATES.pop(user_id, None)
+        await message.answer(
+            f"✅ User bloklandi: <code>{target_user_id}</code>",
+            parse_mode="HTML",
+            reply_markup=get_admin_menu(),
+        )
         return
 
-    unblock_user(target_id)
-    await message.answer(f"✅ Blockdan chiqarildi: <code>{target_id}</code>", parse_mode="HTML")
+    if state == "broadcast":
+        text = (message.text or "").strip()
+        if not text:
+            await message.answer("❌ Bo'sh xabar yuborib bo'lmaydi.")
+            return
 
+        ADMIN_STATES.pop(user_id, None)
+        users = get_all_active_user_ids()
+        sent = 0
+        failed = 0
 
-async def _send_with_retry(bot, user_id: int, text: str, retries: int = 2) -> bool:
-    for attempt in range(retries + 1):
-        try:
-            await bot.send_message(user_id, text, parse_mode="HTML")
-            return True
-        except Exception:
-            if attempt >= retries:
-                return False
-            await asyncio.sleep(0.2 * (attempt + 1))
-    return False
+        await message.answer("🔍 Qidirilmoqda...\n📢 Broadcast boshlandi.")
 
+        for uid in users:
+            try:
+                await message.bot.send_message(uid, f"📢 <b>Yangilik</b>\n\n{text}", parse_mode="HTML")
+                sent += 1
+            except Exception:
+                failed += 1
+                mark_user_inactive(uid)
 
-@router.message(Command("broadcast"))
-async def admin_broadcast(message: types.Message):
-    if not _is_admin(message.from_user.id):
-        return
-
-    parts = (message.text or "").split(maxsplit=1)
-    if len(parts) < 2:
-        await message.answer("Foydalanish: /broadcast Xabar matni")
-        return
-
-    text = parts[1].strip()
-    user_ids = get_all_user_ids()
-
-    if not user_ids:
-        await message.answer("Hali foydalanuvchilar topilmadi")
-        return
-
-    ok = 0
-    failed = 0
-    skipped = 0
-    batch_size = 25
-
-    progress_message = await message.answer(f"🔍 Foydalanuvchilar tayyorlandi.\n📢 Jo'natish boshlandi: {len(user_ids)} ta foydalanuvchi")
-
-    payload = f"📢 <b>Yangilik</b>\n\n{text}"
-
-    for start in range(0, len(user_ids), batch_size):
-        batch = user_ids[start:start + batch_size]
-        tasks = []
-
-        for user_id in batch:
-            if is_user_blocked(user_id):
-                skipped += 1
-                continue
-            tasks.append(_send_with_retry(message.bot, user_id, payload))
-
-        if tasks:
-            results = await asyncio.gather(*tasks, return_exceptions=False)
-            ok += sum(1 for item in results if item)
-            failed += sum(1 for item in results if not item)
-
-        try:
-            await progress_message.edit_text(
-                "📡 Broadcast davom etmoqda...\n\n"
-                f"Jo'natildi: {ok}\n"
-                f"Xato: {failed}\n"
-                f"Skip (blocked): {skipped}\n"
-                f"Progress: {min(start + batch_size, len(user_ids))}/{len(user_ids)}"
-            )
-        except Exception:
-            pass
-
-        # Flood ehtimolini kamaytirish uchun batchlar orasida kichik pauza.
-        await asyncio.sleep(0.25)
-
-    await message.answer(
-        "✅ Broadcast tugadi\n\n"
-        f"Yuborildi: {ok}\n"
-        f"Xato: {failed}\n"
-        f"Skip (blocked): {skipped}"
-    )
+        await message.answer(
+            "✅ <b>Broadcast yakunlandi</b>\n\n"
+            f"📨 Yuborildi: <b>{sent}</b>\n"
+            f"❌ Xato: <b>{failed}</b>",
+            parse_mode="HTML",
+            reply_markup=get_admin_menu(),
+        )
 
 
 def register(dp):

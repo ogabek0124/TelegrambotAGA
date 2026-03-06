@@ -23,6 +23,7 @@ def get_badge(streak: int):
 
 @router.callback_query(F.data == "menu:progress")
 async def show_progress(callback: CallbackQuery):
+    await callback.answer("⏳ Yuklanmoqda...")
     user_id = callback.from_user.id
     progress = get_progress(user_id)
     
@@ -35,7 +36,6 @@ async def show_progress(callback: CallbackQuery):
             "Sizda hali progress yo'q. Testlarni yeching!",
             reply_markup=back_keyboard
         )
-        await callback.answer()
         return
 
     correct, total, streak, last_date = progress
@@ -71,7 +71,7 @@ async def show_progress(callback: CallbackQuery):
         parse_mode="HTML",
         reply_markup=back_keyboard
     )
-    await callback.answer()
+
 
 
 def register(dp):
