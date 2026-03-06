@@ -23,6 +23,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 _CACHE: dict[str, tuple[float, object]] = {}
 _CACHE_LOCK = Lock()
 CACHE_TTL_SEC = 30
+_SCHEMA_READY = False
+_SCHEMA_LOCK = Lock()
 
 
 def _cache_get(key: str):
@@ -49,8 +51,8 @@ def _cache_invalidate(prefix: str):
             _CACHE.pop(key, None)
 
 
-def get_connection():
-    """Get database connection - PostgreSQL in production, SQLite locally."""
+def _open_connection():
+    """Open a raw DB connection without running migrations/bootstrap."""
     if USE_POSTGRES and DATABASE_URL:
         return psycopg2.connect(DATABASE_URL, connect_timeout=3)
 
@@ -60,77 +62,106 @@ def get_connection():
     return conn
 
 
+def _apply_schema(cursor):
+    """Create required tables and perform additive migrations safely."""
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS progress (
+        user_id BIGINT PRIMARY KEY,
+        correct INTEGER DEFAULT 0,
+        total INTEGER DEFAULT 0,
+        streak INTEGER DEFAULT 0,
+        last_date TEXT,
+        level TEXT DEFAULT 'beginner'
+    )
+    """
+    )
+
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS daily_lessons (
+        user_id BIGINT PRIMARY KEY,
+        learned_date TEXT
+    )
+    """
+    )
+
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS bot_users (
+        user_id BIGINT PRIMARY KEY,
+        username TEXT,
+        first_name TEXT,
+        blocked INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        referred_by BIGINT,
+        referrals_count INTEGER DEFAULT 0,
+        last_seen TEXT,
+        created_at TEXT
+    )
+    """
+    )
+
+    migration_columns = [
+        ("blocked", "INTEGER DEFAULT 0"),
+        ("is_active", "INTEGER DEFAULT 1"),
+        ("referred_by", "BIGINT"),
+        ("referrals_count", "INTEGER DEFAULT 0"),
+        ("last_seen", "TEXT"),
+        ("created_at", "TEXT"),
+        ("username", "TEXT"),
+        ("first_name", "TEXT"),
+    ]
+    for col_name, col_type in migration_columns:
+        try:
+            cursor.execute(f"ALTER TABLE bot_users ADD COLUMN {col_name} {col_type}")
+        except Exception:
+            pass
+
+    try:
+        cursor.execute("ALTER TABLE progress ADD COLUMN level TEXT DEFAULT 'beginner'")
+    except Exception:
+        pass
+
+
+def get_connection():
+    """Get DB connection and lazily ensure schema exists (one-time per process)."""
+    global _SCHEMA_READY
+
+    conn = _open_connection()
+    if _SCHEMA_READY:
+        return conn
+
+    with _SCHEMA_LOCK:
+        if _SCHEMA_READY:
+            return conn
+        try:
+            c = conn.cursor()
+            _apply_schema(c)
+            conn.commit()
+            _SCHEMA_READY = True
+        except Exception:
+            conn.rollback()
+            raise
+
+    return conn
+
+
 def _ph() -> str:
     return "%s" if USE_POSTGRES else "?"
 
 
 def init_db():
     """Initialize database tables."""
-    conn = get_connection()
+    global _SCHEMA_READY
+
+    conn = _open_connection()
     try:
         c = conn.cursor()
-
-        c.execute(
-            """
-        CREATE TABLE IF NOT EXISTS progress (
-            user_id BIGINT PRIMARY KEY,
-            correct INTEGER DEFAULT 0,
-            total INTEGER DEFAULT 0,
-            streak INTEGER DEFAULT 0,
-            last_date TEXT,
-            level TEXT DEFAULT 'beginner'
-        )
-        """
-        )
-
-        c.execute(
-            """
-        CREATE TABLE IF NOT EXISTS daily_lessons (
-            user_id BIGINT PRIMARY KEY,
-            learned_date TEXT
-        )
-        """
-        )
-
-        c.execute(
-            """
-        CREATE TABLE IF NOT EXISTS bot_users (
-            user_id BIGINT PRIMARY KEY,
-            username TEXT,
-            first_name TEXT,
-            blocked INTEGER DEFAULT 0,
-            is_active INTEGER DEFAULT 1,
-            referred_by BIGINT,
-            referrals_count INTEGER DEFAULT 0,
-            last_seen TEXT,
-            created_at TEXT
-        )
-        """
-        )
-
-        # Safe migration for old DBs.
-        migration_columns = [
-            ("blocked", "INTEGER DEFAULT 0"),
-            ("is_active", "INTEGER DEFAULT 1"),
-            ("referred_by", "BIGINT"),
-            ("referrals_count", "INTEGER DEFAULT 0"),
-            ("last_seen", "TEXT"),
-            ("created_at", "TEXT"),
-            ("username", "TEXT"),
-            ("first_name", "TEXT"),
-        ]
-        for col_name, col_type in migration_columns:
-            try:
-                c.execute(f"ALTER TABLE bot_users ADD COLUMN {col_name} {col_type}")
-            except Exception:
-                pass
-
-        try:
-            c.execute("ALTER TABLE progress ADD COLUMN level TEXT DEFAULT 'beginner'")
-        except Exception:
-            pass
+        _apply_schema(c)
 
         conn.commit()
+        _SCHEMA_READY = True
         print("✅ Database tables created successfully")
     except Exception as e:
         conn.rollback()
