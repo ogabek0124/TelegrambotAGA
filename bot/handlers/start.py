@@ -3,7 +3,7 @@ from aiogram.filters import Command, CommandObject
 from keyboards.inline_menus import get_main_menu_inline
 from services.db import get_user_level
 from services.user_sync import sync_telegram_user
-from services.db import upsert_user, register_referral
+from services.db import upsert_user, register_referral, get_referral_stats
 from config import BOT_USERNAME
 
 router = Router()
@@ -54,10 +54,14 @@ async def referral_handler(message: types.Message):
     else:
         link = f"t.me/yourbot?start={message.from_user.id}"
 
+    stats = get_referral_stats(message.from_user.id)
+
     await message.answer(
         "🔗 <b>Sizning referral linkingiz</b>\n\n"
         f"{link}\n\n"
-        "Do'stlaringiz shu link orqali kirsa sizga bonus yoziladi.",
+        "Do'stlaringiz shu link orqali kirsa sizga bonus yoziladi.\n\n"
+        f"👥 Taklif qilganlar: <b>{stats['referral_count']}</b>\n"
+        f"🎁 Bonus: <b>{stats['bonus']}</b>",
         parse_mode="HTML"
     )
 

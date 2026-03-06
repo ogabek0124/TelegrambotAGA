@@ -20,6 +20,7 @@ if not TOKEN:
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/progress.db")
 DEBUG = os.getenv("DEBUG", "False") == "True"
 BOT_USERNAME = _clean_env(os.getenv("BOT_USERNAME"))
+REDIS_URL = _clean_env(os.getenv("REDIS_URL"))
 
 
 def _parse_admin_ids(value: str | None) -> set[int]:

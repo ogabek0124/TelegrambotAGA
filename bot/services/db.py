@@ -1,7 +1,7 @@
 import os
 from datetime import date, timedelta
 from pathlib import Path
-from time import time
+from utils.cache import cache_get, cache_set, cache_invalidate_prefix, cache_clear_all
 
 # Try PostgreSQL first, fallback to SQLite for local dev
 try:
@@ -20,29 +20,10 @@ DB_NAME = str(DATA_DIR / "progress.db")
 DATABASE_URL = os.getenv("DATABASE_URL")
 CACHE_TTL_SECONDS = int(os.getenv("BOT_CACHE_TTL", "20"))
 
-_CACHE = {}
-
-
-def _cache_get(key):
-    item = _CACHE.get(key)
-    if not item:
-        return None
-    expires_at, value = item
-    if time() > expires_at:
-        _CACHE.pop(key, None)
-        return None
-    return value
-
-
-def _cache_set(key, value, ttl=CACHE_TTL_SECONDS):
-    _CACHE[key] = (time() + ttl, value)
-
 
 def _invalidate_cache(prefixes):
-    keys = list(_CACHE.keys())
-    for key in keys:
-        if any(str(key).startswith(prefix) for prefix in prefixes):
-            _CACHE.pop(key, None)
+    for prefix in prefixes:
+        cache_invalidate_prefix(prefix)
 
 
 def get_connection():
@@ -106,7 +87,7 @@ def init_db():
             pass
         
         conn.commit()
-        _CACHE.clear()
+        cache_clear_all()
         print("✅ Database tables created successfully")
     except Exception as e:
         conn.rollback()
@@ -119,7 +100,7 @@ def init_db():
 def get_progress(user_id: int):
     """Get user progress stats"""
     cache_key = f"progress:{user_id}"
-    cached = _cache_get(cache_key)
+    cached = cache_get(cache_key)
     if cached is not None:
         return cached
 
@@ -132,7 +113,7 @@ def get_progress(user_id: int):
         """, (user_id,))
         row = c.fetchone()
         result = row if row else (0, 0, 0, None)
-        _cache_set(cache_key, result)
+        cache_set(cache_key, result, ttl=CACHE_TTL_SECONDS)
         return result
 
 
@@ -230,7 +211,7 @@ def save_progress(user_id: int, is_correct: bool):
 def get_streak(user_id: int):
     """Get user's current streak"""
     cache_key = f"streak:{user_id}"
-    cached = _cache_get(cache_key)
+    cached = cache_get(cache_key)
     if cached is not None:
         return cached
 
@@ -240,14 +221,14 @@ def get_streak(user_id: int):
         c.execute(f"SELECT streak FROM progress WHERE user_id={placeholder}", (user_id,))
         row = c.fetchone()
         result = row[0] if row else 0
-        _cache_set(cache_key, result)
+        cache_set(cache_key, result, ttl=CACHE_TTL_SECONDS)
         return result
 
 
 def get_leaderboard(limit: int = 10):
     """Get top users by streak and total score"""
     cache_key = f"leaderboard:{limit}"
-    cached = _cache_get(cache_key)
+    cached = cache_get(cache_key)
     if cached is not None:
         return cached
 
@@ -261,7 +242,7 @@ def get_leaderboard(limit: int = 10):
         LIMIT {placeholder}
         """, (limit,))
         result = c.fetchall()
-        _cache_set(cache_key, result)
+        cache_set(cache_key, result, ttl=CACHE_TTL_SECONDS)
         return result
 
 
@@ -299,7 +280,7 @@ def set_user_level(user_id: int, level: str):
 def get_user_level(user_id: int):
     """Get user's current learning level"""
     cache_key = f"user_level:{user_id}"
-    cached = _cache_get(cache_key)
+    cached = cache_get(cache_key)
     if cached is not None:
         return cached
 
@@ -309,7 +290,7 @@ def get_user_level(user_id: int):
         c.execute(f"SELECT level FROM progress WHERE user_id={placeholder}", (user_id,))
         row = c.fetchone()
         result = row[0] if row and row[0] else None
-        _cache_set(cache_key, result)
+        cache_set(cache_key, result, ttl=CACHE_TTL_SECONDS)
         return result
 
 
@@ -389,13 +370,13 @@ def register_referral(user_id: int, referrer_id: int) -> bool:
         )
         conn.commit()
 
-    _invalidate_cache(("admin_stats", "users:"))
+    _invalidate_cache(("admin_stats", "users:", f"referral:{user_id}", f"referral:{referrer_id}"))
     return True
 
 
 def is_user_blocked(user_id: int) -> bool:
     cache_key = f"blocked:{user_id}"
-    cached = _cache_get(cache_key)
+    cached = cache_get(cache_key)
     if cached is not None:
         return cached
 
@@ -404,8 +385,17 @@ def is_user_blocked(user_id: int) -> bool:
         c = conn.cursor()
         c.execute(f"SELECT 1 FROM blocked_users WHERE user_id={placeholder}", (user_id,))
         result = c.fetchone() is not None
-        _cache_set(cache_key, result, ttl=30)
+        cache_set(cache_key, result, ttl=30)
         return result
+
+
+def unblock_user(user_id: int):
+    placeholder = "%s" if USE_POSTGRES else "?"
+    with get_connection() as conn:
+        c = conn.cursor()
+        c.execute(f"DELETE FROM blocked_users WHERE user_id={placeholder}", (user_id,))
+        conn.commit()
+    _invalidate_cache((f"blocked:{user_id}",))
 
 
 def block_user(user_id: int):
@@ -428,7 +418,7 @@ def block_user(user_id: int):
 
 def get_all_user_ids():
     """All known user ids for broadcast."""
-    cached = _cache_get("users:all_ids")
+    cached = cache_get("users:all_ids")
     if cached is not None:
         return cached
 
@@ -437,13 +427,13 @@ def get_all_user_ids():
         c.execute("SELECT user_id FROM users")
         rows = c.fetchall()
         result = [row[0] for row in rows]
-        _cache_set("users:all_ids", result, ttl=30)
+        cache_set("users:all_ids", result, ttl=30)
         return result
 
 
 def get_admin_stats():
     """Admin statistics: total/today/active users."""
-    cached = _cache_get("admin_stats")
+    cached = cache_get("admin_stats")
     if cached is not None:
         return cached
 
@@ -474,5 +464,25 @@ def get_admin_stats():
             "today_joined": today,
             "active_users": active,
         }
-        _cache_set("admin_stats", result, ttl=20)
+        cache_set("admin_stats", result, ttl=20)
+        return result
+
+
+def get_referral_stats(user_id: int):
+    """Return referral_count and bonus for specific user."""
+    cache_key = f"referral:{user_id}"
+    cached = cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    placeholder = "%s" if USE_POSTGRES else "?"
+    with get_connection() as conn:
+        c = conn.cursor()
+        c.execute(
+            f"SELECT referral_count, bonus FROM users WHERE user_id={placeholder}",
+            (user_id,),
+        )
+        row = c.fetchone()
+        result = {"referral_count": row[0] if row else 0, "bonus": row[1] if row else 0}
+        cache_set(cache_key, result, ttl=20)
         return result

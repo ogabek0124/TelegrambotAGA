@@ -88,6 +88,10 @@ async def set_default_commands(bot: Bot):
         BotCommand(command="help", description="Yordam"),
         BotCommand(command="referral", description="Referal linkingiz"),
         BotCommand(command="admin", description="Admin panel"),
+        BotCommand(command="stats", description="Bot statistikasi (admin)"),
+        BotCommand(command="broadcast", description="Barcha userga xabar (admin)"),
+        BotCommand(command="block", description="User bloklash (admin)"),
+        BotCommand(command="unblock", description="Userni ochish (admin)"),
     ]
     await bot.set_my_commands(commands)
 
