@@ -16,8 +16,6 @@ async def start_handler(message: types.Message, command: CommandObject | None = 
     first_name = message.from_user.first_name
     username = message.from_user.username
 
-    await message.answer("⏳ Yuklanmoqda...")
-
     # Blocking sync is moved to thread so first response is fast.
     asyncio.create_task(async_sync_telegram_user(user_id, username, first_name))
 

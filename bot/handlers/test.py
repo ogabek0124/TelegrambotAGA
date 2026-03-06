@@ -77,7 +77,6 @@ def create_options_keyboard(options):
 
 @router.message(lambda m: m.text and "Test" in m.text)
 async def start_test(message: types.Message):
-    await message.answer("⏳ Yuklanmoqda...")
     user_id = message.from_user.id
 
     # User levelni olamiz

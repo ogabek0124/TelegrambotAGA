@@ -23,7 +23,7 @@ def get_badge(streak: int):
 
 @router.callback_query(F.data == "menu:progress")
 async def show_progress(callback: CallbackQuery):
-    await callback.answer("⏳ Yuklanmoqda...")
+    await callback.answer()
     user_id = callback.from_user.id
     progress = get_progress(user_id)
     

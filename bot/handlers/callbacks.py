@@ -23,7 +23,7 @@ router = Router()
 @router.callback_query(F.data.in_({"menu:level", "menu:words", "menu:test", "menu:books", "menu:videos"}))
 async def handle_menu_navigation(callback: CallbackQuery):
     """Menyu navigatsiya"""
-    await callback.answer("⏳ Yuklanmoqda...")
+    await callback.answer()
     action = callback.data.split(":")[1]
     user_level = get_user_level(callback.from_user.id) or "beginner"
     
@@ -77,7 +77,7 @@ async def handle_menu_navigation(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("level:"))
 async def handle_level_selection(callback: CallbackQuery):
     """Daraja tanlash"""
-    await callback.answer("⏳ Yuklanmoqda...")
+    await callback.answer()
     level = callback.data.split(":")[1]
     user_id = callback.from_user.id
     
@@ -96,7 +96,7 @@ async def handle_level_selection(callback: CallbackQuery):
 @router.callback_query(F.data == "words:categories")
 async def handle_word_categories(callback: CallbackQuery):
     """So'z kategoriyalari"""
-    await callback.answer("🔍 Qidirilmoqda...")
+    await callback.answer()
     await callback.message.edit_text(
         "📂 <b>So'z kategoriyalari</b>\n\n"
         "Qaysi kategoriyani o'rganmoqchisiz?",
@@ -109,7 +109,7 @@ async def handle_word_categories(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("back:"))
 async def handle_back_navigation(callback: CallbackQuery):
     """Orqaga qaytish"""
-    await callback.answer("⏳ Yuklanmoqda...")
+    await callback.answer()
     destination = callback.data.split(":")[1]
     
     if destination == "main":

@@ -24,7 +24,7 @@ def get_badge(streak: int):
 
 @router.callback_query(F.data == "menu:streak")
 async def show_streak(callback: CallbackQuery):
-    await callback.answer("⏳ Yuklanmoqda...")
+    await callback.answer()
     user_id = callback.from_user.id
     
     streak = get_streak(user_id)

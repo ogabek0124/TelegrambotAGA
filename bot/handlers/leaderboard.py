@@ -7,7 +7,7 @@ router = Router()
 
 @router.callback_query(F.data == "menu:leaderboard")
 async def show_leaderboard(callback: CallbackQuery):
-    await callback.answer("🔍 Qidirilmoqda...")
+    await callback.answer()
     leaders = get_leaderboard(limit=10)
     
     back_keyboard = InlineKeyboardMarkup(inline_keyboard=[

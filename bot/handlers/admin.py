@@ -60,7 +60,6 @@ async def admin_actions(callback: types.CallbackQuery):
         return
 
     action = callback.data.split(":", 1)[1]
-    await callback.answer("⏳ Yuklanmoqda...")
 
     if action == "stats":
         stats = get_admin_stats()
@@ -135,7 +134,6 @@ async def admin_state_input(message: types.Message):
         sent = 0
         failed = 0
 
-        await message.answer("🔍 Qidirilmoqda...\n📢 Broadcast boshlandi.")
 
         for uid in users:
             try:

@@ -12,7 +12,7 @@ router = Router()
 @router.callback_query(F.data.startswith("level:"))
 async def handle_level_selection(callback: CallbackQuery):
     """Inline button orqali daraja tanlash"""
-    await callback.answer("⏳ Yuklanmoqda...")
+    await callback.answer()
     level = callback.data.split(":")[1]
     
     if level not in ["beginner", "intermediate", "ielts"]:
