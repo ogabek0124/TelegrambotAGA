@@ -11,7 +11,7 @@ from services.db import init_db
 from handlers import (
     start, level, words, test, grammar, progress, leaderboard,
     daily, streak, videos, books, callbacks, flashcard, word_categories,
-    grammar_test, test_history_handler, achievements_handler, admin, error_handler
+    grammar_test, test_history_handler, achievements_handler, admin
 )
 
 # Logging setup
@@ -68,8 +68,6 @@ books.register(dp)
 logger.info("✓ books handler")
 admin.register(dp)
 logger.info("✓ admin handler")
-error_handler.register(dp)
-logger.info("✓ error handler")
 logger.info("Barcha handlers ro'yxatga olingan!")
 
 
