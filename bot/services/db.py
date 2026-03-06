@@ -1,6 +1,7 @@
 import os
 from datetime import date, timedelta
 from pathlib import Path
+from time import time
 
 # Try PostgreSQL first, fallback to SQLite for local dev
 try:
@@ -17,6 +18,31 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_NAME = str(DATA_DIR / "progress.db")
 DATABASE_URL = os.getenv("DATABASE_URL")
+CACHE_TTL_SECONDS = int(os.getenv("BOT_CACHE_TTL", "20"))
+
+_CACHE = {}
+
+
+def _cache_get(key):
+    item = _CACHE.get(key)
+    if not item:
+        return None
+    expires_at, value = item
+    if time() > expires_at:
+        _CACHE.pop(key, None)
+        return None
+    return value
+
+
+def _cache_set(key, value, ttl=CACHE_TTL_SECONDS):
+    _CACHE[key] = (time() + ttl, value)
+
+
+def _invalidate_cache(prefixes):
+    keys = list(_CACHE.keys())
+    for key in keys:
+        if any(str(key).startswith(prefix) for prefix in prefixes):
+            _CACHE.pop(key, None)
 
 
 def get_connection():
@@ -52,6 +78,26 @@ def init_db():
             learned_date TEXT
         )
         """)
+
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id BIGINT PRIMARY KEY,
+            username TEXT,
+            first_name TEXT,
+            referred_by BIGINT,
+            referral_count INTEGER DEFAULT 0,
+            bonus INTEGER DEFAULT 0,
+            created_at TEXT,
+            last_active TEXT
+        )
+        """)
+
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS blocked_users (
+            user_id BIGINT PRIMARY KEY,
+            blocked_at TEXT
+        )
+        """)
         
         # Try to add level column if it doesn't exist (for old DBs)
         try:
@@ -60,6 +106,7 @@ def init_db():
             pass
         
         conn.commit()
+        _CACHE.clear()
         print("✅ Database tables created successfully")
     except Exception as e:
         conn.rollback()
@@ -71,6 +118,11 @@ def init_db():
 
 def get_progress(user_id: int):
     """Get user progress stats"""
+    cache_key = f"progress:{user_id}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     placeholder = "%s" if USE_POSTGRES else "?"
     with get_connection() as conn:
         c = conn.cursor()
@@ -79,7 +131,9 @@ def get_progress(user_id: int):
         FROM progress WHERE user_id={placeholder}
         """, (user_id,))
         row = c.fetchone()
-        return row if row else (0, 0, 0, None)
+        result = row if row else (0, 0, 0, None)
+        _cache_set(cache_key, result)
+        return result
 
 
 def get_today():
@@ -126,6 +180,7 @@ def update_streak(user_id: int):
             """, (user_id, streak, get_today(), streak, get_today()))
         
         conn.commit()
+    _invalidate_cache((f"progress:{user_id}", f"streak:{user_id}", "leaderboard:"))
 
 
 def save_progress(user_id: int, is_correct: bool):
@@ -169,20 +224,33 @@ def save_progress(user_id: int, is_correct: bool):
                 correct, total, streak, get_today()
             ))
         conn.commit()
+    _invalidate_cache((f"progress:{user_id}", f"streak:{user_id}", "leaderboard:"))
 
 
 def get_streak(user_id: int):
     """Get user's current streak"""
+    cache_key = f"streak:{user_id}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     placeholder = "%s" if USE_POSTGRES else "?"
     with get_connection() as conn:
         c = conn.cursor()
         c.execute(f"SELECT streak FROM progress WHERE user_id={placeholder}", (user_id,))
         row = c.fetchone()
-        return row[0] if row else 0
+        result = row[0] if row else 0
+        _cache_set(cache_key, result)
+        return result
 
 
 def get_leaderboard(limit: int = 10):
     """Get top users by streak and total score"""
+    cache_key = f"leaderboard:{limit}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     placeholder = "%s" if USE_POSTGRES else "?"
     with get_connection() as conn:
         c = conn.cursor()
@@ -192,7 +260,9 @@ def get_leaderboard(limit: int = 10):
         ORDER BY streak DESC, total DESC
         LIMIT {placeholder}
         """, (limit,))
-        return c.fetchall()
+        result = c.fetchall()
+        _cache_set(cache_key, result)
+        return result
 
 
 def set_user_level(user_id: int, level: str):
@@ -223,13 +293,186 @@ def set_user_level(user_id: int, level: str):
             """, (level, user_id))
         
         conn.commit()
+    _invalidate_cache((f"user_level:{user_id}",))
 
 
 def get_user_level(user_id: int):
     """Get user's current learning level"""
+    cache_key = f"user_level:{user_id}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     placeholder = "%s" if USE_POSTGRES else "?"
     with get_connection() as conn:
         c = conn.cursor()
         c.execute(f"SELECT level FROM progress WHERE user_id={placeholder}", (user_id,))
         row = c.fetchone()
-        return row[0] if row and row[0] else None
+        result = row[0] if row and row[0] else None
+        _cache_set(cache_key, result)
+        return result
+
+
+def upsert_user(user_id: int, username: str = None, first_name: str = None):
+    """Store user profile for analytics/admin features."""
+    placeholder = "%s" if USE_POSTGRES else "?"
+    today = get_today()
+    with get_connection() as conn:
+        c = conn.cursor()
+        if USE_POSTGRES:
+            c.execute(f"""
+            INSERT INTO users (user_id, username, first_name, created_at, last_active)
+            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            ON CONFLICT(user_id) DO UPDATE SET
+                username=EXCLUDED.username,
+                first_name=EXCLUDED.first_name,
+                last_active=EXCLUDED.last_active
+            """, (user_id, username, first_name, today, today))
+        else:
+            c.execute("""
+            INSERT INTO users (user_id, username, first_name, created_at, last_active)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                username=excluded.username,
+                first_name=excluded.first_name,
+                last_active=excluded.last_active
+            """, (user_id, username, first_name, today, today))
+        conn.commit()
+    _invalidate_cache(("admin_stats", "users:"))
+
+
+def register_referral(user_id: int, referrer_id: int) -> bool:
+    """Attach referrer to user once and increase referrer bonus counter."""
+    if not referrer_id or user_id == referrer_id:
+        return False
+
+    placeholder = "%s" if USE_POSTGRES else "?"
+    with get_connection() as conn:
+        c = conn.cursor()
+
+        # Ensure both users exist in the same transaction.
+        if USE_POSTGRES:
+            c.execute(
+                f"INSERT INTO users (user_id, created_at, last_active) VALUES ({placeholder}, {placeholder}, {placeholder}) ON CONFLICT(user_id) DO NOTHING",
+                (user_id, get_today(), get_today()),
+            )
+            c.execute(
+                f"INSERT INTO users (user_id, created_at, last_active) VALUES ({placeholder}, {placeholder}, {placeholder}) ON CONFLICT(user_id) DO NOTHING",
+                (referrer_id, get_today(), get_today()),
+            )
+        else:
+            c.execute(
+                "INSERT INTO users (user_id, created_at, last_active) VALUES (?, ?, ?) ON CONFLICT(user_id) DO NOTHING",
+                (user_id, get_today(), get_today()),
+            )
+            c.execute(
+                "INSERT INTO users (user_id, created_at, last_active) VALUES (?, ?, ?) ON CONFLICT(user_id) DO NOTHING",
+                (referrer_id, get_today(), get_today()),
+            )
+
+        c.execute(f"SELECT referred_by FROM users WHERE user_id={placeholder}", (user_id,))
+        row = c.fetchone()
+        if row and row[0]:
+            return False
+
+        c.execute(
+            f"UPDATE users SET referred_by={placeholder} WHERE user_id={placeholder} AND referred_by IS NULL",
+            (referrer_id, user_id),
+        )
+
+        if c.rowcount <= 0:
+            return False
+
+        c.execute(
+            f"UPDATE users SET referral_count=referral_count+1, bonus=bonus+1 WHERE user_id={placeholder}",
+            (referrer_id,),
+        )
+        conn.commit()
+
+    _invalidate_cache(("admin_stats", "users:"))
+    return True
+
+
+def is_user_blocked(user_id: int) -> bool:
+    cache_key = f"blocked:{user_id}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    placeholder = "%s" if USE_POSTGRES else "?"
+    with get_connection() as conn:
+        c = conn.cursor()
+        c.execute(f"SELECT 1 FROM blocked_users WHERE user_id={placeholder}", (user_id,))
+        result = c.fetchone() is not None
+        _cache_set(cache_key, result, ttl=30)
+        return result
+
+
+def block_user(user_id: int):
+    placeholder = "%s" if USE_POSTGRES else "?"
+    with get_connection() as conn:
+        c = conn.cursor()
+        if USE_POSTGRES:
+            c.execute(
+                f"INSERT INTO blocked_users (user_id, blocked_at) VALUES ({placeholder}, {placeholder}) ON CONFLICT(user_id) DO NOTHING",
+                (user_id, get_today()),
+            )
+        else:
+            c.execute(
+                "INSERT INTO blocked_users (user_id, blocked_at) VALUES (?, ?) ON CONFLICT(user_id) DO NOTHING",
+                (user_id, get_today()),
+            )
+        conn.commit()
+    _invalidate_cache((f"blocked:{user_id}",))
+
+
+def get_all_user_ids():
+    """All known user ids for broadcast."""
+    cached = _cache_get("users:all_ids")
+    if cached is not None:
+        return cached
+
+    with get_connection() as conn:
+        c = conn.cursor()
+        c.execute("SELECT user_id FROM users")
+        rows = c.fetchall()
+        result = [row[0] for row in rows]
+        _cache_set("users:all_ids", result, ttl=30)
+        return result
+
+
+def get_admin_stats():
+    """Admin statistics: total/today/active users."""
+    cached = _cache_get("admin_stats")
+    if cached is not None:
+        return cached
+
+    with get_connection() as conn:
+        c = conn.cursor()
+        if USE_POSTGRES:
+            c.execute("SELECT COUNT(*) FROM users")
+            total = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURRENT_DATE")
+            today = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(*) FROM users WHERE DATE(last_active) = CURRENT_DATE")
+            active = c.fetchone()[0]
+        else:
+            today_str = get_today()
+            c.execute("SELECT COUNT(*) FROM users")
+            total = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(*) FROM users WHERE DATE(created_at) = ?", (today_str,))
+            today = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(*) FROM users WHERE DATE(last_active) = ?", (today_str,))
+            active = c.fetchone()[0]
+
+        result = {
+            "total_users": total,
+            "today_joined": today,
+            "active_users": active,
+        }
+        _cache_set("admin_stats", result, ttl=20)
+        return result

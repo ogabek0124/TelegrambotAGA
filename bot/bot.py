@@ -7,10 +7,12 @@ from aiogram.types import BotCommand
 
 from config import TOKEN
 from services.db import init_db
+from middlewares.performance import PerformanceMiddleware
+from middlewares.access_control import AccessControlMiddleware
 from handlers import (
     start, level, words, test, grammar, progress, leaderboard, 
     daily, streak, videos, books, callbacks, flashcard, word_categories,
-    grammar_test, test_history_handler, achievements_handler
+    grammar_test, test_history_handler, achievements_handler, admin, errors
 )
 
 # Logging setup
@@ -28,6 +30,14 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 logger.info("Bot va Dispatcher tayyorlandi")
 
+# Middlewares
+perf_middleware = PerformanceMiddleware(slow_threshold=1.0)
+access_middleware = AccessControlMiddleware()
+dp.message.middleware(perf_middleware)
+dp.callback_query.middleware(perf_middleware)
+dp.message.middleware(access_middleware)
+dp.callback_query.middleware(access_middleware)
+
 # Handlers registration
 logger.info("Handlers ro'yxatga olinmoqda...")
 callbacks.register(dp)
@@ -42,6 +52,8 @@ test_history_handler.register(dp)
 logger.info("✓ test_history handler")
 achievements_handler.register(dp)
 logger.info("✓ achievements handler")
+admin.register(dp)
+logger.info("✓ admin handler")
 start.register(dp)
 logger.info("✓ start handler")
 level.register(dp)
@@ -64,6 +76,8 @@ videos.register(dp)
 logger.info("✓ videos handler")
 books.register(dp)
 logger.info("✓ books handler")
+errors.register(dp)
+logger.info("✓ errors handler")
 logger.info("Barcha handlers ro'yxatga olingan!")
 
 
@@ -72,6 +86,8 @@ async def set_default_commands(bot: Bot):
     commands = [
         BotCommand(command="start", description="Botni ishga tushirish"),
         BotCommand(command="help", description="Yordam"),
+        BotCommand(command="referral", description="Referal linkingiz"),
+        BotCommand(command="admin", description="Admin panel"),
     ]
     await bot.set_my_commands(commands)
 

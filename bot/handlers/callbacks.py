@@ -21,6 +21,7 @@ router = Router()
 @router.callback_query(F.data.startswith("menu:"))
 async def handle_menu_navigation(callback: CallbackQuery):
     """Menyu navigatsiya"""
+    await callback.answer("⏳ Yuklanmoqda...")
     action = callback.data.split(":")[1]
     user_level = get_user_level(callback.from_user.id) or "beginner"
     
@@ -147,7 +148,7 @@ async def handle_menu_navigation(callback: CallbackQuery):
         await show_achievements(callback)
         return
     
-    await callback.answer()
+    return
 
 
 @router.callback_query(F.data.startswith("level:"))

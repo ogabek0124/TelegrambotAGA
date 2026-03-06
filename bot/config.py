@@ -19,4 +19,19 @@ if not TOKEN:
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/progress.db")
 DEBUG = os.getenv("DEBUG", "False") == "True"
+BOT_USERNAME = _clean_env(os.getenv("BOT_USERNAME"))
+
+
+def _parse_admin_ids(value: str | None) -> set[int]:
+	if not value:
+		return set()
+	result = set()
+	for part in value.split(","):
+		part = part.strip()
+		if part.isdigit():
+			result.add(int(part))
+	return result
+
+
+ADMIN_IDS = _parse_admin_ids(os.getenv("ADMIN_IDS"))
 
