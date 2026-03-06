@@ -9,6 +9,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from services.db import get_user_level
 from services.test_history import save_test_result
+from keyboards.inline_menus import get_main_menu_inline
 
 router = Router()
 
@@ -224,7 +225,11 @@ async def stop_grammar_test(callback: CallbackQuery):
     if user_id in GRAMMAR_TEST_STATE:
         del GRAMMAR_TEST_STATE[user_id]
     
-    await callback.message.edit_text("🛑 Test to'xtatildi")
+    await callback.message.edit_text(
+        "🛑 Test to'xtatildi\n\n"
+        "Quyidagilardan birini tanlang:",
+        reply_markup=get_main_menu_inline()
+    )
     await callback.answer()
 
 
