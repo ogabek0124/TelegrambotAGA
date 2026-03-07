@@ -18,6 +18,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_NAME = str(DATA_DIR / "progress.db")
 DATABASE_URL = os.getenv("DATABASE_URL")
+FORCE_POSTGRES = os.getenv("FORCE_POSTGRES", "1" if os.getenv("RENDER") else "0") == "1"
 
 # Small in-memory cache for hot reads.
 _CACHE: dict[str, tuple[float, object]] = {}
@@ -53,6 +54,11 @@ def _cache_invalidate(prefix: str):
 
 def _open_connection():
     """Open a raw DB connection without running migrations/bootstrap."""
+    if FORCE_POSTGRES and not (USE_POSTGRES and DATABASE_URL):
+        raise RuntimeError(
+            "PostgreSQL majburiy rejimda (FORCE_POSTGRES=1), lekin DATABASE_URL topilmadi."
+        )
+
     if USE_POSTGRES and DATABASE_URL:
         return psycopg2.connect(DATABASE_URL, connect_timeout=3)
 
@@ -60,6 +66,12 @@ def _open_connection():
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
     return conn
+
+
+def get_db_mode() -> str:
+    if USE_POSTGRES and DATABASE_URL:
+        return "postgres"
+    return "sqlite"
 
 
 def _apply_schema(cursor):

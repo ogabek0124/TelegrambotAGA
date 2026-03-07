@@ -167,7 +167,9 @@ async def main():
 
         # DB init (sync, lekin async context da)
         print("[*] Database tayyorlanmoqda...")
-        init_db()
+            from services.db import get_db_mode, init_db
+            init_db()
+            logger.info(f"DB backend: {get_db_mode()}")
         print("[✓] Database tayyorlandi")
         
         # Bot commands'ni o'rnatish
