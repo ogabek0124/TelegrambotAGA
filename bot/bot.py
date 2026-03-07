@@ -5,6 +5,8 @@ import sys
 import zlib
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
+from aiohttp import web
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
 from config import TOKEN
 from middlewares.user_context import UserContextMiddleware
@@ -25,6 +27,7 @@ logger = logging.getLogger(__name__)
 logger.info("Logger tayyorlandi")
 
 _INSTANCE_LOCK_CONN = None
+USE_WEBHOOK = os.getenv("USE_WEBHOOK", "1" if os.getenv("RENDER") else "0") == "1"
 
 
 def _acquire_instance_lock() -> bool:
@@ -156,14 +159,80 @@ async def start_healthcheck_server():
     return server
 
 
+def _detect_public_base_url() -> str:
+    explicit = os.getenv("WEBHOOK_BASE_URL")
+    if explicit:
+        return explicit.rstrip("/")
+
+    render_external = os.getenv("RENDER_EXTERNAL_URL")
+    if render_external:
+        return render_external.rstrip("/")
+
+    render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+    if render_host:
+        return f"https://{render_host}".rstrip("/")
+
+    service_name = os.getenv("RENDER_SERVICE_NAME")
+    if service_name:
+        return f"https://{service_name}.onrender.com"
+
+    return ""
+
+
+async def run_webhook_mode():
+    """Run bot in webhook mode (recommended for Render Web Service)."""
+    base_url = _detect_public_base_url()
+    if not base_url:
+        raise RuntimeError(
+            "Webhook mode yoqilgan, lekin public URL aniqlanmadi. "
+            "WEBHOOK_BASE_URL ni kiriting."
+        )
+
+    webhook_path = f"/webhook/{TOKEN}"
+    webhook_url = f"{base_url}{webhook_path}"
+    port = int(os.getenv("PORT", "10000"))
+
+    app = web.Application()
+
+    async def health(_request):
+        return web.Response(text="OK")
+
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
+
+    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=webhook_path)
+    setup_application(app, dp, bot=bot)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host="0.0.0.0", port=port)
+    await site.start()
+
+    await bot.set_webhook(
+        webhook_url,
+        drop_pending_updates=True,
+        allowed_updates=dp.resolve_used_update_types(),
+    )
+    logger.info(f"Webhook mode yoqildi: {webhook_url}")
+
+    # Keep process alive.
+    stop_event = asyncio.Event()
+    try:
+        await stop_event.wait()
+    finally:
+        await bot.delete_webhook()
+        await runner.cleanup()
+
+
 async def main():
     health_server = None
     try:
         if not _acquire_instance_lock():
             return
 
-        # Render Web Service timeout bo'lmasligi uchun port ochamiz.
-        health_server = await start_healthcheck_server()
+        if not USE_WEBHOOK:
+            # Polling mode: Render Web Service timeout bo'lmasligi uchun port ochamiz.
+            health_server = await start_healthcheck_server()
 
         # DB init (sync, lekin async context da)
         print("[*] Database tayyorlanmoqda...")
@@ -182,7 +251,10 @@ async def main():
         print("🔄 Telegram'dan xabarlar kutilmoqda...")
         print("💬 Test qilish uchun: @inglizchaoson_bot ga /start yozing\n")
 
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        if USE_WEBHOOK:
+            await run_webhook_mode()
+        else:
+            await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     except Exception as e:
         print(f"\n❌ XATO YUZAGA KELDI: {e}")
         logger.exception("Bot xatosi")
