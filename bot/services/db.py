@@ -320,11 +320,22 @@ def add_referral(new_user_id: int, referrer_id: int) -> bool:
 
 def get_referrals_count(user_id: int) -> int:
     placeholder = _ph()
-    with get_connection() as conn:
-        c = conn.cursor()
-        c.execute(f"SELECT referrals_count FROM bot_users WHERE user_id={placeholder}", (user_id,))
-        row = c.fetchone()
-        return int(row[0]) if row and row[0] else 0
+    try:
+        with get_connection() as conn:
+            c = conn.cursor()
+            c.execute(f"SELECT referrals_count FROM bot_users WHERE user_id={placeholder}", (user_id,))
+            row = c.fetchone()
+            return int(row[0]) if row and row[0] else 0
+    except Exception as exc:
+        # In case schema bootstrap was skipped on a stale connection, initialize and retry once.
+        if "bot_users" in str(exc) and "does not exist" in str(exc):
+            init_db()
+            with get_connection() as conn:
+                c = conn.cursor()
+                c.execute(f"SELECT referrals_count FROM bot_users WHERE user_id={placeholder}", (user_id,))
+                row = c.fetchone()
+                return int(row[0]) if row and row[0] else 0
+        raise
 
 
 def get_progress(user_id: int):

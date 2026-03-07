@@ -32,7 +32,10 @@ async def start_handler(message: types.Message, command: CommandObject | None = 
     user_level = get_user_level(user_id)
     
     if user_level:
-        referrals_count = get_referrals_count(user_id)
+        try:
+            referrals_count = get_referrals_count(user_id)
+        except Exception:
+            referrals_count = 0
 
         referral_line = (
             f"\n🎁 Referal bonusingiz qabul qilindi!"
