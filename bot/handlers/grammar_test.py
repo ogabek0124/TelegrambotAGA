@@ -7,7 +7,12 @@ import time
 from pathlib import Path
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from services.db import get_user_level
+from services.db import (
+    delete_grammar_session,
+    get_user_level,
+    load_grammar_session,
+    save_grammar_session,
+)
 from services.test_history import save_test_result
 from keyboards.inline_menus import get_main_menu_inline
 
@@ -20,6 +25,18 @@ with open(DATA_DIR / "grammar.json", "r", encoding="utf-8") as f:
 
 # Test holati
 GRAMMAR_TEST_STATE = {}
+TARGET_GRAMMAR_QUESTIONS = 10
+
+
+def _restore_state_if_needed(user_id: int) -> bool:
+    if user_id in GRAMMAR_TEST_STATE:
+        return True
+
+    session = load_grammar_session(user_id)
+    if session:
+        GRAMMAR_TEST_STATE[user_id] = session
+        return True
+    return False
 
 
 def create_grammar_question(grammar_rule):
@@ -73,9 +90,12 @@ async def start_grammar_test(callback: CallbackQuery):
         await callback.answer("❌ Bu daraja uchun grammar qoidalar yo'q", show_alert=True)
         return
     
-    # 10 ta savol yaratamiz
+    # 10 ta savol yaratamiz (qoidalar kam bo'lsa ham random repeat bilan)
     questions = []
-    for _ in range(min(10, len(level_grammar))):
+    attempts = 0
+    max_attempts = TARGET_GRAMMAR_QUESTIONS * 5
+    while len(questions) < TARGET_GRAMMAR_QUESTIONS and attempts < max_attempts:
+        attempts += 1
         grammar_rule = random.choice(level_grammar)
         question = create_grammar_question(grammar_rule)
         if question:
@@ -93,6 +113,7 @@ async def start_grammar_test(callback: CallbackQuery):
         "correct": 0,
         "start_time": time.time()
     }
+    save_grammar_session(user_id, GRAMMAR_TEST_STATE[user_id])
     
     await show_grammar_question(callback, user_id)
     await callback.answer("📝 Grammar Test boshlandi!")
@@ -100,7 +121,7 @@ async def start_grammar_test(callback: CallbackQuery):
 
 async def show_grammar_question(callback: CallbackQuery, user_id: int):
     """Grammar savol ko'rsatish"""
-    if user_id not in GRAMMAR_TEST_STATE:
+    if not _restore_state_if_needed(user_id):
         return
     
     state = GRAMMAR_TEST_STATE[user_id]
@@ -137,6 +158,7 @@ async def show_grammar_question(callback: CallbackQuery, user_id: int):
         )
         
         del GRAMMAR_TEST_STATE[user_id]
+        delete_grammar_session(user_id)
         return
     
     question_data = questions[current]
@@ -167,7 +189,7 @@ async def handle_grammar_answer(callback: CallbackQuery):
     """Grammar javobni tekshirish"""
     user_id = callback.from_user.id
     
-    if user_id not in GRAMMAR_TEST_STATE:
+    if not _restore_state_if_needed(user_id):
         await callback.answer("❌ Test topilmadi", show_alert=True)
         return
     
@@ -188,6 +210,7 @@ async def handle_grammar_answer(callback: CallbackQuery):
             feedback += f"\n\n💡 {question_data['explanation']}"
     
     state["current"] += 1
+    save_grammar_session(user_id, state)
     
     await callback.answer(feedback, show_alert=True)
     await show_grammar_question(callback, user_id)
@@ -214,6 +237,9 @@ async def confirm_quit_grammar_test(callback: CallbackQuery):
 async def continue_grammar_test(callback: CallbackQuery):
     """Testni davom ettirish"""
     user_id = callback.from_user.id
+    if not _restore_state_if_needed(user_id):
+        await callback.answer("❌ Test topilmadi", show_alert=True)
+        return
     await show_grammar_question(callback, user_id)
 
 
@@ -224,6 +250,7 @@ async def stop_grammar_test(callback: CallbackQuery):
     
     if user_id in GRAMMAR_TEST_STATE:
         del GRAMMAR_TEST_STATE[user_id]
+    delete_grammar_session(user_id)
     
     await callback.answer()
     await callback.message.edit_text(

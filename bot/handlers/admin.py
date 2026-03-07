@@ -67,7 +67,10 @@ async def admin_actions(callback: types.CallbackQuery):
             "📊 <b>Bot statistikasi</b>\n\n"
             f"👥 Jami foydalanuvchilar: <b>{stats['total_users']}</b>\n"
             f"📈 Bugun qo'shilgan: <b>{stats['today_joined']}</b>\n"
-            f"⚡ Aktiv foydalanuvchilar: <b>{stats['active_users']}</b>",
+            f"🟢 Bugun kirganlar (seen): <b>{stats['seen_today']}</b>\n"
+            f"⚡ Aktiv foydalanuvchilar: <b>{stats['active_users']}</b>\n"
+            f"🔴 Inaktiv (chiqqan/xato): <b>{stats['inactive_users']}</b>\n"
+            f"🚫 Bloklanganlar: <b>{stats['blocked_users']}</b>",
             parse_mode="HTML",
             reply_markup=get_admin_menu(),
         )
@@ -77,7 +80,9 @@ async def admin_actions(callback: types.CallbackQuery):
         stats = get_admin_stats()
         await callback.message.edit_text(
             "⚡ <b>Aktiv foydalanuvchilar</b>\n\n"
-            f"Bugungi aktiv userlar: <b>{stats['active_users']}</b>",
+            f"Bugungi kirganlar (seen): <b>{stats['seen_today']}</b>\n"
+            f"Aktiv userlar: <b>{stats['active_users']}</b>\n"
+            f"Inaktiv userlar: <b>{stats['inactive_users']}</b>",
             parse_mode="HTML",
             reply_markup=get_admin_menu(),
         )

@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import json
 from datetime import date, timedelta
 from pathlib import Path
 from threading import Lock
@@ -110,6 +111,16 @@ def _apply_schema(cursor):
         referrals_count INTEGER DEFAULT 0,
         last_seen TEXT,
         created_at TEXT
+    )
+    """
+    )
+
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS grammar_test_sessions (
+        user_id BIGINT PRIMARY KEY,
+        state_json TEXT NOT NULL,
+        updated_at TEXT
     )
     """
     )
@@ -605,10 +616,77 @@ def get_admin_stats() -> dict:
         c.execute(f"SELECT COUNT(*) FROM bot_users WHERE is_active={placeholder} AND blocked={placeholder}", (1, 0))
         active_users = int(c.fetchone()[0] or 0)
 
+        c.execute(f"SELECT COUNT(*) FROM bot_users WHERE is_active={placeholder}", (0,))
+        inactive_users = int(c.fetchone()[0] or 0)
+
+        c.execute(f"SELECT COUNT(*) FROM bot_users WHERE blocked={placeholder}", (1,))
+        blocked_users = int(c.fetchone()[0] or 0)
+
+        c.execute(f"SELECT COUNT(*) FROM bot_users WHERE last_seen={placeholder}", (today,))
+        seen_today = int(c.fetchone()[0] or 0)
+
     payload = {
         "total_users": total_users,
         "today_joined": today_joined,
         "active_users": active_users,
+        "inactive_users": inactive_users,
+        "blocked_users": blocked_users,
+        "seen_today": seen_today,
     }
     _cache_set(cache_key, payload, ttl=15)
     return payload
+
+
+def save_grammar_session(user_id: int, state: dict):
+    """Persist grammar test session so callbacks survive process restarts."""
+    placeholder = _ph()
+    payload = json.dumps(state, ensure_ascii=False)
+    today = _today_dt_str()
+
+    with get_connection() as conn:
+        c = conn.cursor()
+        if USE_POSTGRES:
+            c.execute(
+                f"""
+                INSERT INTO grammar_test_sessions (user_id, state_json, updated_at)
+                VALUES ({placeholder}, {placeholder}, {placeholder})
+                ON CONFLICT(user_id) DO UPDATE SET
+                    state_json = EXCLUDED.state_json,
+                    updated_at = EXCLUDED.updated_at
+                """,
+                (user_id, payload, today),
+            )
+        else:
+            c.execute(
+                """
+                INSERT INTO grammar_test_sessions (user_id, state_json, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    state_json = excluded.state_json,
+                    updated_at = excluded.updated_at
+                """,
+                (user_id, payload, today),
+            )
+        conn.commit()
+
+
+def load_grammar_session(user_id: int) -> Optional[dict]:
+    placeholder = _ph()
+    with get_connection() as conn:
+        c = conn.cursor()
+        c.execute(f"SELECT state_json FROM grammar_test_sessions WHERE user_id={placeholder}", (user_id,))
+        row = c.fetchone()
+        if not row or not row[0]:
+            return None
+        try:
+            return json.loads(row[0])
+        except Exception:
+            return None
+
+
+def delete_grammar_session(user_id: int):
+    placeholder = _ph()
+    with get_connection() as conn:
+        c = conn.cursor()
+        c.execute(f"DELETE FROM grammar_test_sessions WHERE user_id={placeholder}", (user_id,))
+        conn.commit()
