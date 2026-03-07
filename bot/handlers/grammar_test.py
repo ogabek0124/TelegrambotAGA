@@ -113,7 +113,11 @@ async def start_grammar_test(callback: CallbackQuery):
         "correct": 0,
         "start_time": time.time()
     }
-    save_grammar_session(user_id, GRAMMAR_TEST_STATE[user_id])
+    try:
+        save_grammar_session(user_id, GRAMMAR_TEST_STATE[user_id])
+    except Exception:
+        # DB session persistence muvaffaqiyatsiz bo'lsa ham test davom etsin.
+        pass
     
     await show_grammar_question(callback, user_id)
     await callback.answer("📝 Grammar Test boshlandi!")

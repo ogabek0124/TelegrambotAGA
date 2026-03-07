@@ -643,50 +643,72 @@ def save_grammar_session(user_id: int, state: dict):
     payload = json.dumps(state, ensure_ascii=False)
     today = _today_dt_str()
 
-    with get_connection() as conn:
-        c = conn.cursor()
-        if USE_POSTGRES:
-            c.execute(
-                f"""
-                INSERT INTO grammar_test_sessions (user_id, state_json, updated_at)
-                VALUES ({placeholder}, {placeholder}, {placeholder})
-                ON CONFLICT(user_id) DO UPDATE SET
-                    state_json = EXCLUDED.state_json,
-                    updated_at = EXCLUDED.updated_at
-                """,
-                (user_id, payload, today),
-            )
-        else:
-            c.execute(
-                """
-                INSERT INTO grammar_test_sessions (user_id, state_json, updated_at)
-                VALUES (?, ?, ?)
-                ON CONFLICT(user_id) DO UPDATE SET
-                    state_json = excluded.state_json,
-                    updated_at = excluded.updated_at
-                """,
-                (user_id, payload, today),
-            )
-        conn.commit()
+    def _execute_upsert():
+        with get_connection() as conn:
+            c = conn.cursor()
+            if USE_POSTGRES:
+                c.execute(
+                    f"""
+                    INSERT INTO grammar_test_sessions (user_id, state_json, updated_at)
+                    VALUES ({placeholder}, {placeholder}, {placeholder})
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        state_json = EXCLUDED.state_json,
+                        updated_at = EXCLUDED.updated_at
+                    """,
+                    (user_id, payload, today),
+                )
+            else:
+                c.execute(
+                    """
+                    INSERT INTO grammar_test_sessions (user_id, state_json, updated_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        state_json = excluded.state_json,
+                        updated_at = excluded.updated_at
+                    """,
+                    (user_id, payload, today),
+                )
+            conn.commit()
+
+    try:
+        _execute_upsert()
+    except Exception as exc:
+        if "grammar_test_sessions" in str(exc) and "does not exist" in str(exc):
+            init_db()
+            _execute_upsert()
+            return
+        raise
 
 
 def load_grammar_session(user_id: int) -> Optional[dict]:
     placeholder = _ph()
-    with get_connection() as conn:
-        c = conn.cursor()
-        c.execute(f"SELECT state_json FROM grammar_test_sessions WHERE user_id={placeholder}", (user_id,))
-        row = c.fetchone()
-        if not row or not row[0]:
+    try:
+        with get_connection() as conn:
+            c = conn.cursor()
+            c.execute(f"SELECT state_json FROM grammar_test_sessions WHERE user_id={placeholder}", (user_id,))
+            row = c.fetchone()
+            if not row or not row[0]:
+                return None
+            try:
+                return json.loads(row[0])
+            except Exception:
+                return None
+    except Exception as exc:
+        if "grammar_test_sessions" in str(exc) and "does not exist" in str(exc):
+            init_db()
             return None
-        try:
-            return json.loads(row[0])
-        except Exception:
-            return None
+        raise
 
 
 def delete_grammar_session(user_id: int):
     placeholder = _ph()
-    with get_connection() as conn:
-        c = conn.cursor()
-        c.execute(f"DELETE FROM grammar_test_sessions WHERE user_id={placeholder}", (user_id,))
-        conn.commit()
+    try:
+        with get_connection() as conn:
+            c = conn.cursor()
+            c.execute(f"DELETE FROM grammar_test_sessions WHERE user_id={placeholder}", (user_id,))
+            conn.commit()
+    except Exception as exc:
+        if "grammar_test_sessions" in str(exc) and "does not exist" in str(exc):
+            init_db()
+            return
+        raise
