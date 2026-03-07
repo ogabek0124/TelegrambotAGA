@@ -214,7 +214,11 @@ async def handle_grammar_answer(callback: CallbackQuery):
             feedback += f"\n\n💡 {question_data['explanation']}"
     
     state["current"] += 1
-    save_grammar_session(user_id, state)
+    try:
+        save_grammar_session(user_id, state)
+    except Exception:
+        # Session DB ga yozish xato bo'lsa ham testni davom ettiramiz.
+        pass
     
     await callback.answer(feedback, show_alert=True)
     await show_grammar_question(callback, user_id)

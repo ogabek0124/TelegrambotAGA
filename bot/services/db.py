@@ -135,16 +135,26 @@ def _apply_schema(cursor):
         ("username", "TEXT"),
         ("first_name", "TEXT"),
     ]
-    for col_name, col_type in migration_columns:
+    if USE_POSTGRES:
+        for col_name, col_type in migration_columns:
+            cursor.execute(f"ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS {col_name} {col_type}")
+        cursor.execute("ALTER TABLE progress ADD COLUMN IF NOT EXISTS level TEXT DEFAULT 'beginner'")
+    else:
+        for col_name, col_type in migration_columns:
+            try:
+                cursor.execute(f"ALTER TABLE bot_users ADD COLUMN {col_name} {col_type}")
+            except Exception:
+                pass
+
         try:
-            cursor.execute(f"ALTER TABLE bot_users ADD COLUMN {col_name} {col_type}")
+            cursor.execute("ALTER TABLE progress ADD COLUMN level TEXT DEFAULT 'beginner'")
         except Exception:
             pass
 
-    try:
-        cursor.execute("ALTER TABLE progress ADD COLUMN level TEXT DEFAULT 'beginner'")
-    except Exception:
-        pass
+
+def _is_missing_table_error(exc: Exception, table_name: str) -> bool:
+    text = str(exc).lower()
+    return table_name.lower() in text and ("does not exist" in text or "undefinedtable" in text)
 
 
 def get_connection():
@@ -673,7 +683,7 @@ def save_grammar_session(user_id: int, state: dict):
     try:
         _execute_upsert()
     except Exception as exc:
-        if "grammar_test_sessions" in str(exc) and "does not exist" in str(exc):
+        if _is_missing_table_error(exc, "grammar_test_sessions"):
             init_db()
             _execute_upsert()
             return
@@ -694,7 +704,7 @@ def load_grammar_session(user_id: int) -> Optional[dict]:
             except Exception:
                 return None
     except Exception as exc:
-        if "grammar_test_sessions" in str(exc) and "does not exist" in str(exc):
+        if _is_missing_table_error(exc, "grammar_test_sessions"):
             init_db()
             return None
         raise
@@ -708,7 +718,7 @@ def delete_grammar_session(user_id: int):
             c.execute(f"DELETE FROM grammar_test_sessions WHERE user_id={placeholder}", (user_id,))
             conn.commit()
     except Exception as exc:
-        if "grammar_test_sessions" in str(exc) and "does not exist" in str(exc):
+        if _is_missing_table_error(exc, "grammar_test_sessions"):
             init_db()
             return
         raise
